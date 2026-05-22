@@ -1,0 +1,47 @@
+# ==============================================
+# .gitignore — Supervisorio (VB.NET / .NET 6)
+# ==============================================
+
+# Binários gerados pelo build
+bin/
+obj/
+
+# Cache e configurações locais do Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Arquivos temporários do Roslyn e IntelliSense
+*.rsuser
+.idea/
+
+# Arquivos de publicação
+publish/
+*_publish/
+
+# Pacotes NuGet (restaurados automaticamente via dotnet restore)
+packages/
+*.nupkg
+*.snupkg
+
+# Arquivos de log e diagnóstico
+*.log
+TestResults/
+coverage/
+
+# Arquivos de runtime gerados pelo .NET
+*.runtimeconfig.json
+*.deps.json
+
+# Arquivos de sistema operacional
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Arquivos de configuração local sensível (não versionar)
+appsettings.local.*
+secrets.*

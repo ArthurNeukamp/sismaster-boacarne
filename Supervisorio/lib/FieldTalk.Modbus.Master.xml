@@ -1,0 +1,1843 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FieldTalk.Modbus.Master</name>
+    </assembly>
+    <members>
+        <member name="T:FieldTalk.Modbus.Master.DllImport">
+            <exclude/>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.DllImport.DLL_NAME">
+            <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.DllImport.loadDll">
+            <exclude/>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.BusProtocolErrors">
+            <summary> Protocol Errors and Modbus exceptions codes </summary>
+            <remarks>
+            Definition of error codes returned by the FieldTalk functions.
+            The error code can be converted to a UNICODE error text using the
+            function BusProtocolErrors.getBusProtocolErrorText.
+            </remarks>
+            <threadsafety static="true" instance="true"/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.BusProtocolErrors.#cctor">
+            <exclude/>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_SUCCESS">
+            <summary> Operation was successful </summary>
+            <remarks>
+            This return codes indicates no error.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_ILLEGAL_ARGUMENT_ERROR">
+            <summary> Illegal argument error </summary>
+            <remarks>
+            A parameter passed to the function returning this error code is invalid
+            or out of range.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_ILLEGAL_STATE_ERROR">
+            <summary> Illegal state error </summary>
+            <remarks>
+            The function is called in a wrong state. This return code is returned by
+            all functions if the protocol has not been opened succesfully yet.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_EVALUATION_EXPIRED">
+            <summary> Evaluation expired </summary>
+            <remarks>
+            This version of the library is a function limited evaluation version
+            and has now expired.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_IO_ERROR_CLASS">
+            <summary> IO error class </summary>
+            <remarks>
+            Errors of this class signal a problem in conjunction with the IO
+            system.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_IO_ERROR">
+            <summary> IO error </summary>
+            <remarks>
+            The underlaying IO system reported an error.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_OPEN_ERR">
+            <summary> Port or socket open error </summary>
+            <remarks>
+            The TCPIP socket or the serial port could not be opened. In case of a
+            serial port it indicates that the serial port does not exist on the
+            system.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_PORT_ALREADY_OPEN">
+            <summary> Serial port already open </summary>
+            <remarks>
+            The serial port defined for the open operation is already opened by
+            another application.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_TCPIP_CONNECT_ERR">
+            <summary> TCPIP connection error </summary>
+            <remarks>
+            Signals that the TCPIP connection could not be established.
+            Typically this error occurs when a host does not exist on the network or
+            the IP address or host name is wrong. The remote host must also listen
+            on the appropriate port.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_CONNECTION_WAS_CLOSED">
+            <summary> Remote peer closed TCPIP connection </summary>
+            <remarks>
+            Signals that the TCPIP connection was closed by the remote peer or is
+            broken.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_SOCKET_LIB_ERROR">
+            <summary> Socket library error </summary>
+            <remarks>
+            The TCPIP socket library (eg WINSOCK) could not be loaded or the DLL
+            is missing or not installed.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_PORT_ALREADY_BOUND">
+            <summary> TCP port already bound </summary>
+            <remarks>
+            Indicates that the specified TCP port cannot be bound. The port might
+            already be taken by another application or hasn't been released yet by
+            the TCPIP stack for re-use.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_LISTEN_FAILED">
+            <summary> Listen failed </summary>
+            <remarks>
+            The listen operation on the specified TCP port failed..
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_FILEDES_EXCEEDED">
+            <summary> File descriptors exceeded </summary>
+            <remarks>
+            Maximum number of usable file descriptors exceeded.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_PORT_NO_ACCESS">
+            <summary> No permission to access serial port or TCP port </summary>
+            <remarks>
+            You don't have permission to access the serial port or TCP port. Run the
+            program as root. If the error is related to a serial port, change the
+            access privilege. If it is related to TCPIP use TCP port number which
+            is outside the IPPORT_RESERVED range.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_PORT_NOT_AVAIL">
+            <summary> TCP port not available </summary>
+            <remarks>
+            The specified TCP port is not available on this machine.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_BUS_PROTOCOL_ERROR_CLASS">
+            <summary> Fieldbus protocol error class </summary>
+            <remarks>
+            Signals that a fieldbus protocol related error has
+            occured. This class is the general class of errors produced by
+            failed or interrupted data transfer functions. It is also produced when
+            receiving invalid frames or exception responses.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_CHECKSUM_ERROR">
+            <summary> Checksum error </summary>
+            <remarks>
+            Signals that the checksum of a received frame is invalid.
+            A poor data link typically causes this error.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_INVALID_FRAME_ERROR">
+            <summary> Invalid frame error </summary>
+            <remarks>
+            Signals that a received frame does not correspond either by structure or
+            content to the specification or does not match a previously sent query
+            frame. A poor data link typically causes this error.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_INVALID_REPLY_ERROR">
+            <summary> Invalid reply error </summary>
+            <remarks>
+            Signals that a received reply does not correspond
+            to the specification.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_REPLY_TIMEOUT_ERROR">
+            <summary> Reply time-out </summary>
+            <remarks>
+            Signals that a fieldbus data transfer timed out. This can occur if the
+            slave device does not reply in time or does not reply at all. A wrong
+            unit adress will also cause this error. In some occasions this exception
+            is also produced if the characters received don't constitute a complete
+            frame.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_SEND_TIMEOUT_ERROR">
+            <summary> Send time-out </summary>
+            <remarks>
+            Signals that a fieldbus data send timed out. This can only occur if the
+            handshake lines are not properly set.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_INVALID_MBAP_ID">
+            <summary> Invalid MPAB indentifer </summary>
+            <remarks>
+            Either the protocol or transaction identifier in the reply is
+            incorrect. A slave device must return the identifiers
+            received from the master.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_LINE_ERROR">
+            <summary> Serial line error </summary>
+            <remarks> A receive error was detected by the UART. This can
+            be a parity error, character overrun or frame error.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_MBUS_EXCEPTION_RESPONSE">
+            <summary> Modbus exception response </summary>
+            <remarks>
+            Signals that a Modbus exception response was received. Exception
+            responses are sent by a slave device instead of a normal response
+            message if it received the query message correctly but cannot handle the
+            query. This error usually occurs if a master queried an invalid or
+            non-existing data address or if the master used a Modbus function, which
+            is not supported by the slave device.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_MBUS_ILLEGAL_FUNCTION_RESPONSE">
+            <summary> Illegal Function exception response </summary>
+            <remarks>
+            Signals that an Illegal Function exception response (code 01) was
+            received. This exception response is sent by a slave device instead of a
+            normal response message if a master sent a Modbus function, which is not
+            supported by the slave device.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_MBUS_ILLEGAL_ESS_RESPONSE">
+            <summary> Illegal Data address exception response </summary>
+            <remarks>
+            Signals that an Illegal Data address exception response (code 02)
+            was received. This exception response is sent by a slave device instead
+            of a normal response message if a master queried an invalid or
+            non-existing data ess.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_MBUS_ILLEGAL_VALUE_RESPONSE">
+            <summary> Illegal Data Value exception response </summary>
+            <remarks>
+            Signals that a Illegal Value exception response was (code 03)
+            received. This exception response is sent by a slave device instead of
+            a normal response message if a master sent a data value, which is not an
+            allowable value for the slave device.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_MBUS_SLAVE_FAILURE_RESPONSE">
+            <summary> Slave Device Failure exception response </summary>
+            <remarks>
+            Signals that a Slave Device Failure exception response (code 04) was
+            received. This exception response is sent by a slave device instead of a
+            normal response message if an unrecoverable error occured while
+            processing the requested action. This response is also sent if the
+            request would generate a response whose size exceeds the allowable data
+            size.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_MBUS_GW_PATH_UNAVAIL_RESPONSE">
+            <summary> Gateway Path Unavailable exception response </summary>
+            <remarks>
+            Signals that a Gateway Path Unavailable exception response (code 0A) was
+            received. This exception is typically sent by gateways if the gateway
+            was unable to establish a connection with the target device.
+            </remarks>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.BusProtocolErrors.FTALK_MBUS_GW_TARGET_FAIL_RESPONSE">
+            <summary> Gateway Target Device Failed exception response </summary>
+            <remarks>
+            Signals that a Gateway Target Device failed exception response (code 0B)
+            was received. This exception is typically sent by gateways if the gateway
+            was unable to receive a response from the target device. Usually means
+            that the device is not present on the network.
+            </remarks>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.BusProtocolErrors.getBusProtocolErrorText(System.Int32)">
+            <summary> Returns string description of an error code </summary>
+            <param name="errCode"> FieldTalk error code </param>
+            <returns> Error text string </returns>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusMasterFunctions">
+            <summary> Base class which implements Modbus data and control functions </summary>
+            <remarks>
+            The functions provided by this base class apply to all protocol flavours
+            via inheritance. For a more detailed description see section @ref
+            mbusmaster.
+            </remarks>
+            <threadsafety static="true" instance="false"/>
+            <seealso href="group__mbusmaster.htm" target= "_self">Data and Control Functions for all Modbus Protocol Flavours</seealso>
+            <seealso href="group__mbusmasterserial.htm" target= "_self">Serial Protocols</seealso>
+            <seealso href="group__mbusmasterip.htm" target= "_self">IP based Protocols</seealso>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusMasterFunctions.mbusHdl">
+            <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.#cctor">
+            <exclude/>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusMasterFunctions.timeout">
+            <summary> Time-out port property </summary>
+            <remarks>
+            Configures operation or socket time-out.
+            <para> The time-out value is indicative only and not guaranteed to be
+            maintained. How precise it is followed depends on the operating system
+            used, it's scheduling priority and it's system timer resolution.</para>
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> Timeout value in ms (Range: 1 - 100000) </value>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusMasterFunctions.pollDelay">
+            <summary> Poll delay property </summary>
+            <remarks>
+            This property sets the delay time which applies between two
+            consecutive Modbus read/write. A value of 0 disables the poll delay.
+            <para> The delay value is indicative only and not guaranteed to be
+            maintained. How precise it is followed depends on the operating system
+            used, it's scheduling priority and it's system timer resolution.</para>
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> Delay value in ms (Range: 0 - 100000), 0 disables poll delay </value>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusMasterFunctions.retryCnt">
+            <summary> Retry count property </summary>
+            <remarks>
+            Configures the automatic retry setting. A value of 0 disables any automatic retries.
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> Retry count (Range: 0 - 10), 0 disables retries </value>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusMasterFunctions.bigEndianInts">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusMasterFunctions.swappedFloats">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.Dispose">
+            <summary> Releases any associated communication resources (serial ports or sockets). </summary>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.Finalize">
+            <summary> Destructor. </summary>
+            <remarks>
+            Does release any associated communication resources (serial ports or sockets).
+            </remarks>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readCoils(System.Int32,System.Int32,System.Boolean[])">
+            <summary>
+            Modbus function 1 (01 hex),
+            Read Coil Status/Read Coils.
+            </summary>
+            <remarks>
+            Reads the contents of the discrete outputs (coils, 0:00000 table).
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="bitArr"> Buffer which will contain the data read. The length
+            of the array determines how many coils are read (Range: 1-2000). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readCoils(System.Int32,System.Int32,System.Boolean[],System.Int32)">
+            <summary>
+            Modbus function 1 (01 hex),
+            Read Coil Status/Read Coils.
+            </summary>
+            <remarks>
+            Reads the contents of the discrete outputs (coils, 0:00000 table).
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="bitArr"> Buffer which will contain the data read. </param>
+            <param name="numCoils">  Number of coils to be read (Range: 1-2000). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readInputDiscretes(System.Int32,System.Int32,System.Boolean[])">
+            <summary>
+            Modbus function 2 (02 hex),
+            Read Inputs Status/Read Input Discretes.
+            </summary>
+            <remarks>
+            Reads the contents of the discrete inputs (input status, 1:00000 table).
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="bitArr"> Buffer which will contain the data read. The length
+            of the array determines how many inputs are read (Range: 1-2000). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readInputDiscretes(System.Int32,System.Int32,System.Boolean[],System.Int32)">
+            <summary>
+            Modbus function 2 (02 hex),
+            Read Inputs Status/Read Input Discretes.
+            </summary>
+            <remarks>
+            Reads the contents of the discrete inputs (input status, 1:00000 table).
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="bitArr"> Buffer which will contain the data read. </param>
+            <param name="numDiscretes">  Number of inputs to be read (Range: 1-2000). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeCoil(System.Int32,System.Int32,System.Boolean)">
+            <summary> Modbus function 5 (05 hex), Force Single Coil/Write Coil. </summary>
+            <remarks>
+            Sets a single discrete output variable (coil, 0:00000 table) to either ON or OFF.
+            <note> Broadcast supported for serial protocols  </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 0 - 255) </param>
+            <param name="bitAddr"> Coil address (Range: 1 - 65536) </param>
+            <param name="bitVal">  true sets, false clears discrete output variable </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.forceMultipleCoils(System.Int32,System.Int32,System.Boolean[])">
+            <summary> Modbus function 15 (0F hex), Force Multiple Coils. </summary>
+            <remarks>
+            Writes binary values into a sequence of discrete outputs
+            (coils, 0:00000 table).
+            <note> Broadcast supported for serial protocols  </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="bitArr">  Buffer which contains the data to be sent. The length
+            of the array determines how many coils are written (Range: 1-1968). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.forceMultipleCoils(System.Int32,System.Int32,System.Boolean[],System.Int32)">
+            <summary> Modbus function 15 (0F hex), Force Multiple Coils. </summary>
+            <remarks>
+            Writes binary values into a sequence of discrete outputs
+            (coils, 0:00000 table).
+            <note> Broadcast supported for serial protocols  </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="bitArr">  Buffer which contains the data to be sent. </param>
+            <param name="numCoils">  Number of coils to be written (Range: 1-1968). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readMultipleRegisters(System.Int32,System.Int32,System.Array)">
+            <summary>
+            Modbus function 3 (03 hex),
+            Read Holding Registers/Read Multiple Registers (16-bit, 32-bit and floating point).
+            </summary>
+            <remarks>
+            Reads the contents of the output registers
+            (holding registers, 4:00000 table).
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start register (Range: 1 - 65536) </param>
+            <param name="regArr"> Array which will be filled with the data read.
+            Accepted array types are Int16[], UInt16[], Int32[], UInt32[] and float[].
+            The length of the array determines how many registers are read
+            (Range: 1-125 for 16-bit, 1-62 for 32-bit and floats). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readMultipleRegisters(System.Int32,System.Int32,System.Array,System.Int32)">
+            <summary>
+            Modbus function 3 (03 hex),
+            Read Holding Registers/Read Multiple Registers (16-bit, 32-bit and floating point).
+            </summary>
+            <remarks>
+            Reads the contents of the output registers
+            (holding registers, 4:00000 table).
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start register (Range: 1 - 65536) </param>
+            <param name="regArr"> Array which will be filled with the data read.
+            Accepted array types are Int16[], UInt16[], Int32[], UInt32[] and float[].
+            </param>
+            <param name="numRegs">  Number of values to be read
+            (Range: 1-125 for 16-bit, 1-62 for 32-bit and floats). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readInputRegisters(System.Int32,System.Int32,System.Array)">
+            <summary>
+            Modbus function 4 (04 hex),
+            Read Input Registers (16-bit, 32-bit and floating point).
+            </summary>
+            <remarks>
+            Read the contents of the input registers
+            (3:00000 table).
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start register (Range: 1 - 65536) </param>
+            <param name="regArr"> Array which will be filled with the data read.
+            Accepted array types are Int16[], UInt16[], Int32[], UInt32[] and float[].
+            The length of the array determines how many registers are read
+            (Range: 1-125 for 16-bit, 1-62 for 32-bit and floats). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readInputRegisters(System.Int32,System.Int32,System.Array,System.Int32)">
+            <summary>
+            Modbus function 4 (04 hex),
+            Read Input Registers (16-bit, 32-bit and floating point).
+            </summary>
+            <remarks>
+            Read the contents of the input registers
+            (3:00000 table).
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start register (Range: 1 - 65536) </param>
+            <param name="regArr"> Array which will be filled with the data read.
+            Accepted array types are Int16[], UInt16[], Int32[], UInt32[] and float[].
+            </param>
+            <param name="numRegs">  Number of values to be read
+            (Range: 1-125 for 16-bit, 1-62 for 32-bit and floats). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeSingleRegister(System.Int32,System.Int32,System.Int16)">
+            <summary>
+            Modbus function 6 (06 hex),
+            Preset Single Register/Write Single Register.
+            </summary>
+            <remarks>
+            Writes a value into a single output register
+            (holding register, 4:00000 reference).
+            <note> Broadcast supported for serial protocols  </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 0 - 255) </param>
+            <param name="regAddr"> Register address (Range: 1 - 65536) </param>
+            <param name="regVal">  Data to be sent as signed 16-bit value</param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeSingleRegister(System.Int32,System.Int32,System.UInt16)">
+            <summary>
+            Modbus function 6 (06 hex),
+            Preset Single Register/Write Single Register.
+            </summary>
+            <remarks>
+            Writes a value into a single output register
+            (holding register, 4:00000 reference).
+            <note> Broadcast supported for serial protocols  </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 0 - 255) </param>
+            <param name="regAddr"> Register address (Range: 1 - 65536) </param>
+            <param name="regVal">  Data to be sent as unsigned 16-bit value</param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeMultipleRegisters(System.Int32,System.Int32,System.Array)">
+            <summary>
+            Modbus function 16 (10 hex),
+            Preset Multiple Registers/Write Multiple Registers (16-bit, 32-bit and floating point).
+            </summary>
+            <remarks>
+            Writes values into a sequence of output registers
+            (holding registers, 4:00000 table).
+            <note> Broadcast supported for serial protocols  </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 0 - 255) </param>
+            <param name="startRef"> Start register (Range: 1 - 65536) </param>
+            <param name="regArr"> Array with data to be sent.
+            Accepted array types are Int16[], UInt16[], Int32[], UInt32[] and float[].
+            The length of the array determines how many registers are written
+            (Range: 1-123 for 16-bit, 1-61 for 32-bit and floats). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeMultipleRegisters(System.Int32,System.Int32,System.Array,System.Int32)">
+            <summary>
+            Modbus function 16 (10 hex),
+            Preset Multiple Registers/Write Multiple Registers (16-bit, 32-bit and floating point).
+            </summary>
+            <remarks>
+            Writes values into a sequence of output registers
+            (holding registers, 4:00000 table).
+            <note> Broadcast supported for serial protocols  </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 0 - 255) </param>
+            <param name="startRef"> Start register (Range: 1 - 65536) </param>
+            <param name="regArr"> Array with data to be sent.
+            Accepted array types are Int16[], UInt16[], Int32[], UInt32[] and float[].
+            </param>
+            <param name="numRegs">  Number of values to be written
+            (Range: 1-123 for 16-bit, 1-61 for 32-bit and floats). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.maskWriteRegister(System.Int32,System.Int32,System.Int16,System.Int16)">
+            <summary> Modbus function 22 (16 hex), Mask Write Register. </summary>
+            <remarks>
+            Masks bits according to an AND and an OR mask into a single output register
+            (holding register, 4:00000 reference). Masking is done as follows:
+            retVal = (currentVal AND andMask) OR (orMask AND (NOT andMask))
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="regAddr"> Register address (Range: 1 - 65536) </param>
+            <param name="andMask">  Mask to be applied as a logic AND to the register </param>
+            <param name="orMask">  Mask to be applied as a logic OR to the register </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readWriteRegisters(System.Int32,System.Int32,System.Int16[],System.Int32,System.Int16[])">
+            <summary> Modbus function 23 (17 hex), Read/Write Registers. </summary>
+            <remarks>
+            Combines reading and writing of the output registers in one transaction
+            (holding registers, 4:00000 table).
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="readRef"> Start registers for reading (Range: 1 - 65536) </param>
+            <param name="readArr"> Buffer which will contain the data read. The length
+            of the array determines how many registers are read (Range: 1-125). </param>
+            <param name="writeRef"> Start registers for writing (Range: 1 - 65536) </param>
+            <param name="writeArr"> Buffer with data to be sent. The length
+            of the array determines how many registers are written (Range: 1-121). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readWriteRegisters(System.Int32,System.Int32,System.Int16[],System.Int32,System.Int32,System.Int16[],System.Int32)">
+            <summary> Modbus function 23 (17 hex), Read/Write Registers. </summary>
+            <remarks>
+            Combines reading and writing of the output registers in one transaction
+            (holding registers, 4:00000 table).
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="readRef"> Start register for reading (Range: 1 - 65536) </param>
+            <param name="readArr"> Buffer which will contain the data read. </param>
+            <param name="writeRef"> Start register for writing (Range: 1 - 65536) </param>
+            <param name="writeArr"> Buffer with data to be sent. </param>
+            <param name="readCnt">  Number of registers to be read (Range: 1-125). </param>
+            <param name="writeCnt">  Number of registers to be written (Range: 1-121). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readMultipleLongInts(System.Int32,System.Int32,System.Int32[])">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readMultipleLongInts(System.Int32,System.Int32,System.Int32[],System.Int32)">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readInputLongInts(System.Int32,System.Int32,System.Int32[])">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readInputLongInts(System.Int32,System.Int32,System.Int32[],System.Int32)">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeMultipleLongInts(System.Int32,System.Int32,System.Int32[])">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeMultipleLongInts(System.Int32,System.Int32,System.Int32[],System.Int32)">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readMultipleFloats(System.Int32,System.Int32,System.Single[])">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readMultipleFloats(System.Int32,System.Int32,System.Single[],System.Int32)">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readInputFloats(System.Int32,System.Int32,System.Single[])">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readInputFloats(System.Int32,System.Int32,System.Single[],System.Int32)">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeMultipleFloats(System.Int32,System.Int32,System.Single[])">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeMultipleFloats(System.Int32,System.Int32,System.Single[],System.Int32)">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readMultipleMod10000(System.Int32,System.Int32,System.Int32[])">
+            <summary>
+            Modbus function 3 (03 hex) for 32-bit modulo-10000 long int data types,
+            Read Holding Registers/Read Multiple Registers as modulo-10000 long int
+            data.
+            </summary>
+            <remarks>
+            Reads the contents of pairs of consecutive output registers (holding
+            registers, 4:00000 table) representing a modulo-10000 long int value
+            into 32-bit int values and performs number format conversion.
+            <note> Modbus does not know about any other data type than discretes
+            and 16-bit registers. Because a modulo-10000 value is of
+            32-bit length, it will be transferred as two consecutive
+            16-bit registers.
+            This means that the amount of registers transferred with this function
+            is twice the amount of int values passed to this function. </note>
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="int32Arr"> Buffer which will be filled with the data read.
+            The length of the array determines how many values are read (Range: 1-62). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readMultipleMod10000(System.Int32,System.Int32,System.Int32[],System.Int32)">
+            <summary>
+            Modbus function 3 (03 hex) for 32-bit modulo-10000 long int data types,
+            Read Holding Registers/Read Multiple Registers as modulo-10000 long int
+            data.
+            </summary>
+            <remarks>
+            Reads the contents of pairs of consecutive output registers (holding
+            registers, 4:00000 table) representing a modulo-10000 long int value
+            into 32-bit int values and performs number format conversion.
+            <note> Modbus does not know about any other data type than discretes
+            and 16-bit registers. Because a modulo-10000 value is of
+            32-bit length, it will be transferred as two consecutive
+            16-bit registers.
+            This means that the amount of registers transferred with this function
+            is twice the amount of int values passed to this function. </note>
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="int32Arr"> Buffer which will be filled with the data read. </param>
+            <param name="numRegs">  Number of values to be read (Range: 1-62). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readInputMod10000(System.Int32,System.Int32,System.Int32[])">
+            <summary> Modbus function 4 (04 hex) for 32-bit modulo-10000 long int data types,
+            Read Input Registers as modulo-10000 long int data. </summary>
+            <remarks>
+            Reads the contents of pairs of consecutive input registers (3:00000
+            table) representing a modulo-10000 long int value into 32-bit long int
+            values and performs number format conversion.
+            <note> Modbus does not know about any other data type than discretes
+            and 16-bit registers. Because a modulo-10000 value is of
+            32-bit length, it will be transferred as two consecutive
+            16-bit registers.
+            This means that the amount of registers transferred with this function
+            is twice the amount of int values passed to this function. </note>
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="int32Arr"> Buffer which will be filled with the data read. The length
+            of the array determines how many values are read (Range: 1-62). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readInputMod10000(System.Int32,System.Int32,System.Int32[],System.Int32)">
+            <summary> Modbus function 4 (04 hex) for 32-bit modulo-10000 long int data types,
+            Read Input Registers as modulo-10000 long int data. </summary>
+            <remarks>
+            Reads the contents of pairs of consecutive input registers (3:00000
+            table) representing a modulo-10000 long int value into 32-bit long int
+            values and performs number format conversion.
+            <note> Modbus does not know about any other data type than discretes
+            and 16-bit registers. Because a modulo-10000 value is of
+            32-bit length, it will be transferred as two consecutive
+            16-bit registers.
+            This means that the amount of registers transferred with this function
+            is twice the amount of int values passed to this function. </note>
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="int32Arr"> Buffer which will be filled with the data read. </param>
+            <param name="numRegs">  Number of values to be read (Range: 1-62). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeMultipleMod10000(System.Int32,System.Int32,System.Int32[])">
+            <summary>
+            Modbus function 16 (10 hex) for 32-bit modulo-10000 long int data types,
+            Preset Multiple Registers/Write Multiple Registers with
+            modulo-10000 long int data.
+            </summary>
+            <remarks>
+            Writes long int values into pairs of output registers (holding
+            registers, 4:00000 table) representing a modulo-10000 long int value and
+            performs number format conversion.
+            <note> Modbus does not know about any other data type than discretes
+            and 16-bit registers. Because a modulo-10000 value is of
+            32-bit length, it will be transferred as two consecutive
+            16-bit registers.
+            This means that the amount of registers transferred with this function
+            is twice the amount of int values passed to this function. </note>
+            <note> Broadcast supported for serial protocols  </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 0 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="int32Arr"> Buffer with the data to be sent. The length
+            of the array determines how many values are written (Range: 1-61). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.writeMultipleMod10000(System.Int32,System.Int32,System.Int32[],System.Int32)">
+            <summary>
+            Modbus function 16 (10 hex) for 32-bit modulo-10000 long int data types,
+            Preset Multiple Registers/Write Multiple Registers with
+            modulo-10000 long int data.
+            </summary>
+            <remarks>
+            Writes long int values into pairs of output registers (holding
+            registers, 4:00000 table) representing a modulo-10000 long int value and
+            performs number format conversion.
+            <note> Modbus does not know about any other data type than discretes
+            and 16-bit registers. Because a modulo-10000 value is of
+            32-bit length, it will be transferred as two consecutive
+            16-bit registers.
+            This means that the amount of registers transferred with this function
+            is twice the amount of int values passed to this function. </note>
+            <note> Broadcast supported for serial protocols  </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 0 - 255) </param>
+            <param name="startRef"> Start reference (Range: 1 - 65536) </param>
+            <param name="int32Arr"> Buffer with the data to be sent. </param>
+            <param name="numRegs">  Number of values to be sent (Range: 1-61). </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.readExceptionStatus(System.Int32,System.Byte@)">
+            <summary> Modbus function 7 (07 hex), Read Exception Status. </summary>
+            <remarks>
+            Reads the eight exception status coils within the slave device.
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) </param>
+            <param name="statusByte"> Slave status byte. The meaning of this status byte is
+            slave specific and varies from device to device. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.returnQueryData(System.Int32,System.Byte[],System.Byte[]@)">
+            <summary> Modbus function code 8, sub-function 00, Return Query Data. </summary>
+            <remarks>
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255 for serial, 0 - 255 for TCP) </param>
+            <param name="queryArr"> Buffer with data to be sent.
+            The length of the array determines how many bytes are sent and returned </param>
+            <param name="echoArr"> Buffer which will contain the data read </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success, FTALK_INVALID_REPLY_ERROR
+            if reply does not match query data or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for more error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.restartCommunicationsOption(System.Int32,System.Int32)">
+            <summary> Modbus function code 8, sub-function 01, Restart Communications Option </summary>
+            <remarks>
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255 for serial, 0 - 255 for TCP) </param>
+            <param name="clearEventLog"> Flag when set to one clears in
+            addition the slave's communication even log.</param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.customFunction(System.Int32,System.Int32,System.Byte[],System.Byte[])">
+            <summary> User Defined Function Code </summary>
+            <remarks>
+            This method can be used to implement User Defined Function Codes.
+            The caller has only to pass the user data to this function. The assembly of
+            the Modbus frame (the so called ADU) including checksums, slave address and
+            function code and subsequentially the transmission, is taken care of by this
+            method.
+            <para>
+            The modbus specification reserves function codes 65-72 and 100-110 for user
+            defined functions.
+            </para>
+            <note> Modbus functions usually have an implied response length and therefore
+            the number of bytes expected to be received is known at
+            the time when sending the request. In case of a custom
+            Modbus function with an open or unknown response length,
+            this function can not be used.
+            </note>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255 for serial, 0 - 255 for TCP) </param>
+            <param name="functionCode"> Custom function code to be used
+            for Modbus transaction (Range: 1-127)</param>
+            <param name="requestData"> Array with data to be sent as request
+            (not including slave address or function code). The length of the
+            array determines how many request bytes are sent (Range: 0-252). </param>
+            <param name="responseData"> Buffer which will be filled with the response data
+            received. The length of the array determines how many bytes are read (Range: 0-252).
+            </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.setTimeout(System.Int32)">
+            <summary> Configures time-out </summary>
+            <remarks>
+            Configures operation or socket time-out.
+            <para> The time-out value is indicative only and not guaranteed to be
+            maintained. How precise it is followed depends on the operating system
+            used, it's scheduling priority and it's system timer resolution.</para>
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <param name="timeOut"> Timeout value in ms (Range: 1 - 100000) </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.getTimeout">
+            <summary> Returns the current time-out setting </summary>
+            <returns> Timeout value in ms </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.setPollDelay(System.Int32)">
+            <summary> Poll delay property </summary>
+            <remarks>
+            This function sets the delay time which applies between two
+            consecutive Modbus read/write. A value of 0 disables the poll delay.
+            <para> The delay value is indicative only and not guaranteed to be
+            maintained. How precise it is followed depends on the operating system
+            used, it's scheduling priority and it's system timer resolution.</para>
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <param name="pollDelay"> Delay value in ms (Range: 0 - 100000), 0 disables poll delay </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.getPollDelay">
+            <summary> Returns the poll delay time </summary>
+            <returns> Delay time in ms, 0 if poll delay is switched off </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.setRetryCnt(System.Int32)">
+            <summary> Configures the automatic retry setting </summary>
+            <remarks>
+            Configures the automatic retry setting. A value of 0 disables any automatic retries.
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <param name="retryCnt"> Retry count (Range: 0 - 10), 0 disables retries </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.getRetryCnt">
+            <summary> Returns the automatic retry count </summary>
+            <returns> Retry count </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.getTotalCounter">
+            <summary> Returns how often a message transfer has been executed </summary>
+            <returns> Counter value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.resetTotalCounter">
+            <summary> Resets total message transfer counter </summary>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.getSuccessCounter">
+            <summary> Returns how often a message transfer was successful </summary>
+            <returns> Counter value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.resetSuccessCounter">
+            <summary> Resets successful message transfer counter </summary>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureStandard32BitMode">
+            <summary> Configures all slaves for Standard 32-bit Mode. </summary>
+            <remarks>
+            In Standard 32-bit Register Mode a 32-bit value is transmitted
+            as two consecutive 16-bit Modbus registers.
+            <para><note> This function call also re-configures the endianess to default
+            little-endian for 32-bit values! </note></para>
+            <para><note> This is the default mode. </note></para>
+            </remarks>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureEnron32BitMode">
+            <summary> Configures all slaves for Daniel/ENRON 32-bit Mode. </summary>
+            <remarks>
+            Some Modbus flavours like the Daniel/Enron protocol
+            represent a 32-bit value using one 32-bit Modbus register instead
+            of two 16-bit registers.
+            <para><note> This function call also re-configures the endianess to big-endian
+            for 32-bit values as defined by the Daniel/ENRON protocol! </note></para>
+            </remarks>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureCountFromOne">
+            <summary> Configures the reference counting scheme to start with one for
+            all slaves. </summary>
+            <remarks>
+            This renders the reference range to be 1 to 65536 (0x10000) and register #0
+            is an illegal register.
+            <para><note> This is the default mode. </note></para>
+            </remarks>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureCountFromZero">
+            <summary> Configures the reference counting scheme to start with
+            zero for all slaves. </summary>
+            <remarks>
+            This renders the valid reference range to be 0 to 65535 (0xFFFF).
+            <para> This renders the first register to be #0 for all slaves.</para>
+            </remarks>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureBigEndianInts">
+            <summary> Configures 32-bit int data type functions to do a word swap </summary>
+            <remarks>
+            <para>  Modbus is using little-endian word order for 32-bit values. The data
+            transfer functions operating upon 32-bit int data types can be
+            configured to do a word swap which enables them to read 32-bit data
+            correctly from a big-endian slave. </para>
+            </remarks>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureSwappedFloats">
+            <summary> Configures float data type functions to do a word swap </summary>
+            <remarks>
+            The data functions operating upon 32-bit float data
+            types can be configured to do a word swap.
+            <para> Most platforms store floats in IEEE 754 little-endian order
+            which does not need a word swap. </para>
+            </remarks>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureLittleEndianInts">
+            <summary> Configures 32-bit int data type functions NOT to do a word swap </summary>
+            <remarks>
+            <para><note> This is the default mode. </note></para>
+            </remarks>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureIeeeFloats">
+            <summary> Configures float data type functions NOT to do a word swap </summary>
+            <remarks>
+            The data functions operating upon 32-bit float data
+            types can be configured to do a word swap.
+            <para><note> This is the default mode. </note></para>
+            </remarks>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureStandard32BitMode(System.Int32)">
+            <summary> Configures a slave for Standard 32-bit Mode. </summary>
+            <remarks>
+            In Standard 32-bit Register Mode a 32-bit value is transmitted
+            as two consecutive 16-bit Modbus registers.
+            <para><note> This function call also re-configures the endianess to default
+            little-endian for 32-bit values! </note></para>
+            <para><note> This is the default mode. </note></para>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) A value of zero configures the behaviour
+            for broadcasting. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or
+            BusProtocolErrors.FTALK_ILLEGAL_ARGUMENT_ERROR if
+            argument out of range </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureEnron32BitMode(System.Int32)">
+            <summary> Configures a slave for Daniel/ENRON 32-bit Mode. </summary>
+            <remarks>
+            Some Modbus flavours like the Daniel/Enron protocol
+            represent a 32-bit value using one 32-bit Modbus register instead
+            of two 16-bit registers.
+            <para><note> This function call also re-configures the endianess to big-endian
+            for 32-bit values as defined by the Daniel/ENRON protocol! </note></para>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) A value of zero configures the behaviour
+            for broadcasting. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or
+            BusProtocolErrors.FTALK_ILLEGAL_ARGUMENT_ERROR if
+            argument out of range </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureCountFromOne(System.Int32)">
+            <summary> Configures the reference counting scheme to start with one for
+            a slave. </summary>
+            <remarks>
+            This renders the reference range to be 1 to 65536 (0x10000) and register #0
+            is an illegal register.
+            <para><note> This is the default mode. </note></para>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) A value of zero configures the behaviour
+            for broadcasting. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or
+            BusProtocolErrors.FTALK_ILLEGAL_ARGUMENT_ERROR if
+            argument out of range </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.onfigureCountFromZero(System.Int32)">
+            <summary> Configures the reference counting scheme to start with
+            zero for a slave. </summary>
+            <remarks>
+            This renders the valid reference range to be 0 to 65535 (0xFFFF).
+            <para> This renders the first register to be #0 for all slaves.</para>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) A value of zero configures the behaviour
+            for broadcasting. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or
+            BusProtocolErrors.FTALK_ILLEGAL_ARGUMENT_ERROR if
+            argument out of range </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureBigEndianInts(System.Int32)">
+            <summary> Configures 32-bit int data type functions to do a word swap
+            on a per slave basis </summary>
+            <remarks>
+            <para>  Modbus is using little-endian word order for 32-bit values. The data
+            transfer functions operating upon 32-bit int data types can be
+            configured to do a word swap which enables them to read 32-bit data
+            correctly from a big-endian slave. </para>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) A value of zero configures the behaviour
+            for broadcasting. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or
+            BusProtocolErrors.FTALK_ILLEGAL_ARGUMENT_ERROR if
+            argument out of range </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureSwappedFloats(System.Int32)">
+            <summary> Configures float data type functions to do a word swap
+            on a per slave basis </summary>
+            <remarks>
+            The data functions operating upon 32-bit float data
+            types can be configured to do a word swap.
+            <para> Most platforms store floats in IEEE 754 little-endian order
+            which does not need a word swap. </para>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) A value of zero configures the behaviour
+            for broadcasting. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or
+            BusProtocolErrors.FTALK_ILLEGAL_ARGUMENT_ERROR if
+            argument out of range </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureLittleEndianInts(System.Int32)">
+            <summary> Configures 32-bit int data type functions NOT to do a word swap
+            on a per slave basis</summary>
+            <remarks>
+            <para><note> This is the default mode. </note></para>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) A value of zero configures the behaviour
+            for broadcasting. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or
+            BusProtocolErrors.FTALK_ILLEGAL_ARGUMENT_ERROR if
+            argument out of range </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.configureIeeeFloats(System.Int32)">
+            <summary> Configures float data type functions NOT to do a word swap
+            on a per slave basis</summary>
+            <remarks>
+            The data functions operating upon 32-bit float data
+            types can be configured to do a word swap.
+            <para><note> This is the default mode. </note></para>
+            </remarks>
+            <param name="slaveAddr"> Modbus address of slave device or unit
+            identifier (Range: 1 - 255) A value of zero configures the behaviour
+            for broadcasting. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or
+            BusProtocolErrors.FTALK_ILLEGAL_ARGUMENT_ERROR if
+            argument out of range </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.isOpen">
+            <summary> Returns whether the protocol is open or not. </summary>
+            <returns> True = open, False = closed </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.closeProtocol">
+            <summary> Closes an open protocol including any associated communication
+            resources (COM ports or sockets). </summary>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusMasterFunctions.getPackageVersion">
+            <summary> Returns the package version number. </summary>
+            <returns> Package version string </returns>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusSerialClientBase">
+            <summary> Base class for serial serial master protocols </summary>
+            <remarks>
+            This base class implements common functions for the serial Modbus master protocols. 
+            It provides functions to open and to close serial port as well as data and control
+            functions which can be used at any time after the protocol has been opened.
+            </remarks>
+            <seealso href="group__mbusmaster.htm" target= "_self">Data and Control Functions for all Modbus Protocol Flavours</seealso>
+            <seealso href="group__mbusmasterserial.htm" target= "_self">Serial Protocols</seealso>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialClientBase.SER_DATABITS_7">
+            <summary> 7 data bits </summary>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialClientBase.SER_DATABITS_8">
+            <summary> 8 data bits </summary>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialClientBase.SER_STOPBITS_1">
+            <summary> 1 stop bit </summary>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialClientBase.SER_STOPBITS_2">
+            <summary> 2 stop bits </summary>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialClientBase.SER_PARITY_NONE">
+            <summary> No parity </summary>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialClientBase.SER_PARITY_ODD">
+            <summary>  Odd parity </summary>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialClientBase.SER_PARITY_EVEN">
+            <summary> Even parity </summary>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusSerialClientBase.portName">
+            <exclude/>
+            <summary> Serial port identifier property </summary>
+            <remarks>
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> Serial port identifier (eg "COM1") </value>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusSerialClientBase.baudRate">
+            <summary> Baud rate property in bps  </summary>
+            <remarks>
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> Typically 1200 - 115200, maximum value depends on UART hardware </value>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusSerialClientBase.dataBits">
+            <summary> Data bits property </summary>
+            <remarks>
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> SER_DATABITS_7 as 7 data bits (ASCII protocol only),
+            SER_DATABITS_8 as data bits </value>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusSerialClientBase.stopBits">
+            <summary> Stop bits property </summary>
+            <remarks>
+            <note> The Modbus standard requires two stop bits if no parity is chosen.
+            This library is not enforcing this but it is a recommended configuration.</note>
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> SER_STOPBITS_1 as 1 stop bit, SER_STOPBITS_2 as 2 stop bits </value>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusSerialClientBase.parity">
+            <summary> Parity property </summary>
+            <remarks>
+            <note> The Modbus standard requires two stop bits if no parity is chosen.
+            This library is not enforcing this but it is a recommended configuration.</note>
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> SER_PARITY_NONE as no parity, SER_PARITY_ODD as odd parity,
+            SER_PARITY_EVEN as even parity </value>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusSerialClientBase.openProtocol">
+            <summary> Opens a serial Modbus protocol and the associated serial
+            port with the port parameters configured via properties </summary>
+            <remarks>
+            This function opens the serial port. After a port has been
+            opened, data and control functions can be used.
+            </remarks>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusSerialClientBase.openProtocol(System.String,System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary> Opens a serial Modbus protocol and the associated serial port
+            with the port parameters configured via properties </summary>
+            <remarks>
+            This function opens the serial port with a specific port settings.
+            After a port has been opened, data and control functions can be used.
+            <note> The Modbus standard requires two stop bits if no parity is chosen.
+            This library is not enforcing this but it is a recommended configuration.</note>
+            </remarks>
+            <param name="portName"> Serial port identifier (eg "COM1") </param>
+            <param name="baudRate"> The port baud rate in bps (1200 - 115200, higher on some platforms) </param>
+            <param name="dataBits"> SER_DATABITS_7: 7 data bits (ASCII protocol only), SER_DATABITS_8: 8 data bits </param>
+            <param name="stopBits"> SER_STOPBITS_1: 1 stop bit, SER_STOPBITS_2: 2 stop bits </param>
+            <param name="parity"> SER_PARITY_NONE: no parity, SER_PARITY_ODD: odd parity, SER_PARITY_EVEN: even parity </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusSerialClientBase.enableRs485Mode(System.Int32)">
+             <summary> Enables RS485 mode </summary>
+             <remarks>
+             In RS485 mode the RTS signal can be used to enable and disable the
+             transmitter of a RS232/RS485 converter. The RTS signal is asserted
+             before sending data. It is cleared after the transmit buffer has been
+             emptied and in addition the specified delay time has elapsed. The delay
+             time is necessary because even the transmit buffer is already empty,
+             the UART's FIFO will still contain unsent characters.
+            
+             <para> The use of RTS controlled RS232/RS485 converters should be
+             avoided if possible. It is difficult to determine the exact time when to
+             switch off the transmitter with non real-time operating systems like
+             Windows and Linux. If it is switched off to early characters might still
+             sit in the FIFO or the transmit register of the UART and these
+             characters will be lost. Hence the slave will not recognize the
+             message. On the other hand if it is switched off too late then the
+             slave's message is corrupted and the master will not recognize the
+             message. </para>
+            
+             <note> The delay value is indicative only and not guaranteed to be
+             maintained. How precise it is followed depends on the operating system
+             used, it's scheduling priority and it's system timer resolution. </note>
+            
+             <note> A protocol must be closed in order to configure it. </note>
+             </remarks>
+             <param name="rtsDelay"> Delay time in ms (Range as 0 - 100000) which
+             applies after the transmit buffer is empty. 0 disables this mode. </param>
+             <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+             See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusSerialMasterProtocol">
+            @internal Deprecated. <exclude/>
+            <summary>This is just an abridged version of the renamed 
+            class with the most commonly uses definitions</summary>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialMasterProtocol.SER_DATABITS_7">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialMasterProtocol.SER_DATABITS_8">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialMasterProtocol.SER_STOPBITS_1">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialMasterProtocol.SER_STOPBITS_2">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialMasterProtocol.SER_PARITY_NONE">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialMasterProtocol.SER_PARITY_ODD">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="F:FieldTalk.Modbus.Master.MbusSerialMasterProtocol.SER_PARITY_EVEN">
+            @internal Deprecated <exclude/>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusRtuMasterProtocol">
+            <summary> Modbus RTU Master Protocol class </summary>
+            <remarks>
+            This class realizes the Modbus RTU master protocol. It provides
+            functions to open and to close serial port as well as data and control
+            functions which can be used at any time after the protocol has been
+            opened. The data and control functions are organized into
+            different conformance classes.
+            <para>
+            It is possible to instantiate multiple instances of this class for
+            establishing multiple connections on different serial ports (They should
+            be executed in separate threads).
+            </para>
+            </remarks>
+            <seealso href="group__mbusmaster.htm" target= "_self">Data and Control Functions for all Modbus Protocol Flavours</seealso>
+            <seealso href="group__mbusmasterserial.htm" target= "_self">Serial Protocols</seealso>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusRtuMasterProtocol.#ctor">
+            <summary> Creates new instance </summary>
+            <exception cref="T:System.OutOfMemoryException"> Creation of class failed </exception>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusAsciiMasterProtocol">
+            <summary> Modbus ASCII Master Protocol class </summary>
+            <remarks>
+            This class realizes the Modbus ASCII master protocol. It provides
+            functions to open and to close serial port as well as data and control
+            functions which can be used at any time after the protocol has been
+            opened. The data and control functions are organized into
+            different conformance classes.
+            <para>
+            It is possible to instantiate multiple instances of this class for
+            establishing multiple connections on different serial ports (They should
+            be executed in separate threads).
+            </para>
+            </remarks>
+            <seealso href="group__mbusmaster.htm" target= "_self">Data and Control Functions for all Modbus Protocol Flavours</seealso>
+            <seealso href="group__mbusmasterserial.htm" target= "_self">Serial Protocols</seealso>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusAsciiMasterProtocol.#ctor">
+            <summary> Creates new instance </summary>
+            <exception cref="T:System.OutOfMemoryException"> Creation of class failed </exception>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusElamMasterProtocol">
+            <summary> Extended Lufkin Automation Modbus Master Protocol </summary>
+            <remarks>
+            This class realizes the Extended Lufkin Automation (ELAM) Modbus protocol.
+            This proprietary Modbus extension allows adressing of up to 2295
+            slave units and the retrieval of up to 2500 registers for Modbus
+            functions 3 and 4.
+            <para>
+            It's implementation is based on the specification
+            "ELAM Extended Lufkin Automation Modbus Version 1.01"
+            published by LUFKIN Automation. The ELAM
+            multiple instruction requests extensions are not implemented.
+            </para>
+            <para>
+            Tests showed the following size limits with a LUFKIN SAM Well
+            Manager device:
+            
+            Coils: 1992 for read
+            Registers:  2500 to read, 60 for write
+            </para>
+            <para>
+            It is possible to instantiate multiple instances of this class for
+            establishing multiple connections on different serial ports (They should
+            be executed in separate threads).
+            </para>
+            </remarks>
+            <seealso href="group__mbusmaster.htm" target= "_self">Data and Control Functions for all Modbus Protocol Flavours</seealso>
+            <seealso href="group__mbusmasterserial.htm" target= "_self">Serial Protocols</seealso>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusElamMasterProtocol.#ctor">
+            <summary> Creates new instance </summary>
+            <exception cref="T:System.OutOfMemoryException"> Creation of class failed </exception>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusIpClientBase">
+            <summary> Base class for all IP based Master Protocol classes </summary>
+            <remarks>
+            This class is a base class for the various flavours of IP
+            based protocols. It provides the common functions to
+            establish and to close a TCP/IP connection.
+            </remarks>
+            <seealso href="group__mbusmaster.htm" target= "_self">Data and Control Functions for all Modbus Protocol Flavours</seealso>
+            <seealso href="group__mbusmasterip.htm" target= "_self">IP based Protocols</seealso>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusIpClientBase.hostName">
+            <summary> Host name </summary>
+            <remarks>
+            A protocol must be closed in order to configure it.
+            </remarks>
+            <value>  String with IP address or host name (eg "127.0.0.1") </value>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusIpClientBase.port">
+            <summary> TCP port property </summary>
+            <remarks>
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> TCP Port number of slave device. Defaults vary depending on protocol used. </value>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusIpClientBase.openProtocol">
+            <summary> Connects to a TCP slave. </summary>
+            <remarks>
+            This function establishes a logical network connection between master
+            and slave. After a connection has been established data and control
+            functions can be used. A TCP/IP connection should be closed if it is no
+            longer needed.
+            </remarks>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusIpClientBase.openProtocol(System.String)">
+            <summary> Connects to a TCP slave. </summary>
+            <remarks>
+            This function establishes a logical network connection between master
+            and slave. After a connection has been established data and control
+            functions can be used. A TCP/IP connection should be closed if it is no
+            longer needed.
+            </remarks>
+            <param name="hostName"> String with IP address or host name (eg "127.0.0.1") </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusIpClientBase.setPort(System.Int16)">
+            <summary> Sets the TCP port number of the Modbus slave device. </summary>
+            <remarks>
+            Must be called before opening the connection with openProtocol().
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <param name="portNo"> Port number to be used when opening the connection </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusIpClientBase.getPort">
+            <summary> Returns the TCP port number used by the protocol. </summary>
+            <returns> Currently set port number </returns>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusTcpMasterProtocol">
+            <summary> MODBUS/TCP Master Protocol class </summary>
+            <remarks>
+            This class realises the MODBUS/TCP master protocol. It provides
+            functions to establish and to close a TCP/IP connection to the slave as
+            well as data and control functions which can be used after a connection
+            to a slave device has been established successfully. The data and
+            control functions are organized into different conformance
+            classes.
+            <para>
+            It is possible to instantiate multiple instances of this class for
+            establishing multiple connections to either the same or different hosts.
+            </para>
+            </remarks>
+            <seealso href="group__mbusmaster.htm" target= "_self">Data and Control Functions for all Modbus Protocol Flavours</seealso>
+            <seealso href="group__mbusmasterip.htm" target= "_self">IP based Protocols</seealso>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusTcpMasterProtocol.port">
+            <summary> TCP port property </summary>
+            <remarks>
+            Usually the port number remains unchanged and defaults to
+            502. However if the port number has to be different
+            from 502 this property must be set before opening the
+            connection with openProtocol().
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> TCP Port number of slave device. Default value is 502. </value>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusTcpMasterProtocol.#ctor">
+            <summary> Creates new instance </summary>
+            <exception cref="T:System.OutOfMemoryException"> Creation of class failed </exception>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusTcpMasterProtocol.setPort(System.Int16)">
+            <summary> Sets the TCP port number of the Modbus slave device. </summary>
+            <remarks>
+            Usually the port number remains unchanged and defaults to
+            502 for Modbus/TCP and 1100 for RTU over TCP.
+            However if the port number has to be different this function must be
+            called before opening the connection with openProtocol().
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <param name="portNo"> Port number to be used when opening the connection </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusTcpMasterProtocol.adamSendReceiveAsciiCmd(System.String,System.String@)">
+            <summary> Send/Receive ADAM 5000/6000 ASCII command. </summary>
+            <remarks>
+            Sends an ADAM 5000/6000 ASCII command to the device and receives the reply
+            as ASCII string. (e.g. "$01M" to retrieve the module name)
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="command"> Command string. Must not be longer
+            than 255 characters. </param>
+            <param name="response"> Response string.
+            A possible trailing CR is removed. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusRtuOverTcpMasterProtocol">
+            <summary> MODBUS/Encapsulated RTU (RTU emulated on TCP) Master Protocol class </summary>
+            <remarks>
+            This class realises the encapsulated (emulated) RTU over TCP master
+            protocol. It provides functions to establish and to close a TCP/IP
+            connection to the slave as well as data and control functions which can
+            be used after a connection  to a slave device has been established
+            successfully. The data and control functions are organized
+            different conformance classes.
+            <para>
+            Using multiple instances of a MbusRtuOverTcpMasterProtocol class enables
+            concurrent protocol transfers using multiple TCP/IP sessions (They should
+            be executed in separate threads).
+            </para>
+            </remarks>
+            <seealso href="group__mbusmaster.htm" target= "_self">Data and Control Functions for all Modbus Protocol Flavours</seealso>
+            <seealso href="group__mbusmasterip.htm" target= "_self">IP based Protocols</seealso>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusRtuOverTcpMasterProtocol.#ctor">
+            <summary> Creates new instance </summary>
+            <exception cref="T:System.OutOfMemoryException"> Creation of class failed </exception>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusRtuOverTcpMasterProtocol.port">
+            <summary> TCP port property </summary>
+            <remarks>
+            Defaults to 1100.
+            Must be set before opening the connection with openProtocol().
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> TCP Port number of slave device. Default value is 1100. </value>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusRtuOverTcpMasterProtocol.setPort(System.Int16)">
+            <summary> Sets the TCP port number used to connect to the Modbus RTU slave device. </summary>
+            <remarks>
+            Defaults to 1100.
+            Must be set before opening the connection with openProtocol().
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <param name="portNo"> Port number to be used when opening the connection </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusAsciiOverTcpMasterProtocol">
+            <summary> MODBUS ASCII over TCP Master Protocol class </summary>
+            <remarks>
+            This class realises the Modbus ASCII protocol using TCP as transport layer.
+            It provides functions to establish and to close a TCP/IP
+            connection to the slave as well as data and control functions which can
+            be used after a connection  to a slave device has been established
+            successfully. The data and control functions are organized
+            different conformance classes.
+            <para>
+            Using multiple instances of a MbusAsciiOverTcpMasterProtocol class enables
+            concurrent protocol transfers using multiple TCP/IP sessions (They should
+            be executed in separate threads).
+            </para>
+            </remarks>
+            <seealso href="group__mbusmaster.htm" target= "_self">Data and Control Functions for all Modbus Protocol Flavours</seealso>
+            <seealso href="group__mbusmasterip.htm" target= "_self">IP based Protocols</seealso>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusAsciiOverTcpMasterProtocol.#ctor">
+            <summary> Creates new instance </summary>
+            <exception cref="T:System.OutOfMemoryException"> Creation of class failed </exception>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusAsciiOverTcpMasterProtocol.port">
+            <summary> TCP port property </summary>
+            <remarks>
+            Defaults to 23 (Telnet port).
+            Must be set before opening the connection with openProtocol().
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> TCP Port number of slave device. Default value is 23. </value>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusAsciiOverTcpMasterProtocol.setPort(System.Int16)">
+            <summary> Sets the TCP port number used to connect to the Modbus ASCII slave device. </summary>
+            <remarks>
+            Defaults to 23 (Telnet port).
+            Must be set before opening the connection with openProtocol().
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <param name="portNo"> Port number to be used when opening the connection </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.MbusUdpMasterProtocol">
+            <summary> MODBUS/UDP Master Protocol class </summary>
+            <remarks> This class realises a Modbus client using MODBUS
+            over UDP protocol variant. It provides functions to
+            establish a UDP connection to the slave as well as data and
+            control functions which can be used after a connection to a
+            slave device has been established successfully. The data and
+            control functions are organized into different conformance
+            classes.
+            <para>
+            It is possible to instantiate multiple instances of this class for
+            establishing multiple connections to either the same or different hosts.
+            </para>
+            </remarks>
+            <seealso href="group__mbusmaster.htm" target= "_self">Data and Control Functions for all Modbus Protocol Flavours</seealso>
+            <seealso href="group__mbusmasterip.htm" target= "_self">IP based Protocols</seealso>
+        </member>
+        <member name="P:FieldTalk.Modbus.Master.MbusUdpMasterProtocol.port">
+            <summary> TCP port property </summary>
+            <remarks>
+            Usually the port number remains unchanged and defaults to
+            502. However if the port number has to be different
+            from 502 this property must be set before opening the
+            connection with openProtocol().
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <value> TCP Port number of slave device. Default value is 502. </value>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusUdpMasterProtocol.#ctor">
+            <summary> Creates new instance </summary>
+            <exception cref="T:System.OutOfMemoryException"> Creation of class failed </exception>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusUdpMasterProtocol.setPort(System.Int16)">
+            <summary> Sets the TCP port number of the Modbus slave device. </summary>
+            <remarks>
+            Usually the port number remains unchanged and defaults to
+            502 for Modbus/TCP and 1100 for RTU over TCP.
+            However if the port number has to be different this function must be
+            called before opening the connection with openProtocol().
+            <note> A protocol must be closed in order to configure it. </note>
+            </remarks>
+            <param name="portNo"> Port number to be used when opening the connection </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.MbusUdpMasterProtocol.adamSendReceiveAsciiCmd(System.String,System.String@)">
+            <summary> Send/Receive ADAM 5000/6000 ASCII command. </summary>
+            <remarks>
+            Sends an ADAM 5000/6000 ASCII command to the device and receives the reply
+            as ASCII string. (e.g. "$01M" to retrieve the module name)
+            <note> No broadcast supported </note>
+            </remarks>
+            <param name="command"> Command string. Must not be longer
+            than 255 characters. </param>
+            <param name="response"> Response string.
+            A possible trailing CR is removed. </param>
+            <returns> BusProtocolErrors.FTALK_SUCCESS on success or error code.
+            See <see cref="T:FieldTalk.Modbus.Master.BusProtocolErrors"/> for possible error codes. </returns>
+        </member>
+        <member name="T:FieldTalk.Modbus.Master.RegisterConverter">
+            <summary> Helper class to convert common data types to Modbus registers and back. </summary>
+            <threadsafety static="true"/>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToInt16(System.UInt16)">
+            <summary> Cast an unsigned 16-bit value to a 16-bit register value </summary>
+            <param name="ushortVal"> Value to be converted </param>
+            <returns> 16-bit register value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToInt16(System.Int32)">
+            <summary> Cast a signed 32-bit value to a tuple of 16-bit register values </summary>
+            <param name="intVal"> Value to be converted </param>
+            <returns> Array with 2 16-bit register values </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToInt16(System.UInt32)">
+            <summary> Cast an unsigned 32-bit value to a tuple of 16-bit register values </summary>
+            <param name="intVal"> Value to be converted </param>
+            <returns> Array with 2 16-bit register values </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToInt16(System.Single)">
+            <summary> Cast an 32-bit floating point value to a tuple of 16-bit register values </summary>
+            <param name="floatVal"> Value to be converted </param>
+            <returns> Array with 2 16-bit register values </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToInt16(System.Int32,System.Int16[],System.Int32)">
+            <summary> Copies a signed 32-bit integer value into an array of 16-bit register values </summary>
+            <param name="intVal"> Value to be converted </param>
+            <param name="regArr"> Register array to receive the values </param>
+            <param name="startIndex"> Copy operation will occupy 2 array elements starting at startIndex </param>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToInt16(System.UInt32,System.Int16[],System.Int32)">
+            <summary> Copies an unsigned 32-bit integer value into an array of 16-bit register values </summary>
+            <param name="intVal"> Value to be converted </param>
+            <param name="regArr"> Register array to receive the values </param>
+            <param name="startIndex"> Copy operation will occupy 2 array elements starting at startIndex </param>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToInt16(System.Single,System.Int16[],System.Int32)">
+            <summary> Copies a 32-bit floating point value into an array of 16-bit register values </summary>
+            <param name="floatVal"> Value to be converted </param>
+            <param name="regArr"> Register array to receive the values </param>
+            <param name="startIndex"> Copy operation will occupy 2 array elements starting at startIndex </param>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToUInt16(System.Int16)">
+            <summary> Cast a 16-bit register value to an unsigned 16-bit value </summary>
+            <param name="ushortVal"> Value to be converted </param>
+            <returns> unsigned 16-bit value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToUInt16(System.Int16[],System.Int32)">
+            <summary> Cast a 16-bit register array element to an unsigned 16-bit value </summary>
+            <param name="regArr"> Register array </param>
+            <param name="startIndex"> Index pointing to the register </param>
+            <returns> unsigned 16-bit value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToInt32(System.Int16[])">
+            <summary> Cast a tuple of 16-bit registers to a signed 32-bit value </summary>
+            <param name="regArr"> Register array with two elements </param>
+            <returns> signed 32-bit value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToInt32(System.Int16[],System.Int32)">
+            <summary> Cast a tuple of 16-bit register array elements to a signed 32-bit value </summary>
+            <param name="regArr"> Register array </param>
+            <param name="startIndex"> Index pointing to the register tuple </param>
+            <returns> signed 32-bit value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToUInt32(System.Int16[])">
+            <summary> Cast a tuple of 16-bit registers to an unsigned 32-bit value </summary>
+            <param name="regArr"> Register array with two elements </param>
+            <returns> unsigned 32-bit value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToUInt32(System.Int16[],System.Int32)">
+            <summary> Cast a tuple of 16-bit register array elements to an unsigned 32-bit value </summary>
+            <param name="regArr"> Register array </param>
+            <param name="startIndex"> Index pointing to the register tuple </param>
+            <returns> unsigned 32-bit value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToSingle(System.Int16[])">
+            <summary> Cast a tuple of 16-bit registers to a 32-bit floating point value </summary>
+            <param name="regArr"> Register array with two elements </param>
+            <returns> floating point value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToSingle(System.Int16[],System.Int32)">
+            <summary> Cast a tuple of 16-bit register array elements to
+            a 32-bit floating point value with little-endian
+            word order </summary>
+            <param name="regArr"> Register array </param>
+            <param name="startIndex"> Index pointing to the register tuple </param>
+            <returns> floating point value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToDouble(System.Int16[],System.Int32)">
+            <summary> Cast four 16-bit register array elements to a
+            64-bit floating point value with little-endian word order
+            </summary>
+            <param name="regArr"> Register array </param>
+            <param name="startIndex"> Index pointing to the register tuple </param>
+            <returns> floating point value </returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToInt16(System.String,System.Int32,System.Boolean)">
+            <summary>
+            Convert an ASCII string into an array of 16-bit Modbus registers
+            </summary>
+            <param name="s">ASCII string</param>
+            <param name="wordLimit">Max size of allocated registers for
+            string. Max is 125.</param>
+            <param name="fill">Flag if array should be filled to wordLimit with 0 characters</param>
+            <returns>Array containing the register values</returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToBits(System.Byte[])">
+            <summary> Unpack all the bits in an array of unsigned bytes
+            to a boolean array containing the bits
+            </summary>
+            <param name="byteArr">Array of bytes, each defining 8
+            bits</param>
+            <returns>Array containing the bit values</returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToBits(System.SByte[])">
+            <summary> Unpack all the bits in an array of signed bytes to
+            a boolean array containing the bits
+            </summary>
+            <param name="byteArr">Array of bytes, each defining 8
+            bits</param>
+            <returns>Array containing the bit values</returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToBits(System.Byte)">
+            <summary> Unpack all the bits in a byte to a boolean array
+            containing the bits
+            </summary>
+            <param name="byteVal">The byte</param>
+            <returns>Array containing the bit values</returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToBits(System.SByte)">
+            <summary>
+            Unpack all the bits in a signed byte to a boolean array
+            containing the bits
+            </summary>
+            <param name="byteVal">The byte</param>
+            <returns>Array containing the bit values</returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToBytes(System.Boolean[])">
+            <summary>
+            Pack an array of bits into an array of 8-bit unsigned bytes
+            </summary>
+            <param name="bits">Array with the bits</param>
+            <returns>Array of bytes</returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToSBytes(System.Boolean[])">
+            <summary>
+            Pack an array of bits into an array of 8-bit signed bytes
+            </summary>
+            <param name="bits">Array with the bits</param>
+            <returns>Array of bytes</returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToByte(System.Boolean[])">
+            <summary>
+            Unpack 8 boolean values into an unsigned byte
+            </summary>
+            <param name="values">Array with bit values, Length
+            must be 8</param>
+            <returns>Byte value</returns>
+        </member>
+        <member name="M:FieldTalk.Modbus.Master.RegisterConverter.ToSByte(System.Boolean[])">
+            <summary>
+            Unpack 8 boolean values into a igned byte
+            </summary>
+            <param name="values">Array with bit values, Length
+            must be 8</param>
+            <returns>Byte value</returns>
+        </member>
+    </members>
+</doc>
