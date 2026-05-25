@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SisMasterConfig>
+
+  <!-- Banco de dados.
+       CaminhoDb: relativo ao executável ou absoluto. Criado automaticamente na primeira execução.
+       IntervaloColetaMinutos: frequência de gravação das temperaturas.
+       ColetarSemConexao: true = continua gravando (clp_ok=0) se o CLP perder comunicação. -->
+  <BancoDados>
+    <CaminhoDb>dados\sensores.db</CaminhoDb>
+    <IntervaloColetaMinutos>5</IntervaloColetaMinutos>
+    <ColetarSemConexao>true</ColetarSemConexao>
+    <RetencaoMeses>12</RetencaoMeses>
+  </BancoDados>
+
+  <!-- Configurações de relatórios e PDF.
+       PastaExportacao: relativo ao executável ou absoluto.
+       FooterTexto: {DATA} e {HORA} são substituídos automaticamente na geração.
+       PeriodoPadraoAtrasoDias: janela de datas padrão ao abrir a tela de relatórios. -->
+  <Relatorios>
+    <NomeCliente>Boa Carne</NomeCliente>
+    <NomeInstalacao>Frigorifico - Planta 1</NomeInstalacao>
+    <FooterTexto>SisMaster Supervisório de Refrigeração | Gerado em {DATA} | {HORA}</FooterTexto>
+    <PastaExportacao>relatorios</PastaExportacao>
+    <PeriodoPadraoAtrasoDias>7</PeriodoPadraoAtrasoDias>
+  </Relatorios>
+
+  <!-- Nomes dos sensores exibidos na tela de relatórios e no PDF.
+       Altere o atributo "nome" para customizar o rótulo.
+       O "id" é fixo e corresponde ao índice do array Ambientes() no código. -->
+  <Sensores>
+    <Sensor id="1"  nome="Tunel 12" />
+    <Sensor id="2"  nome="Tunel 11" />
+    <Sensor id="3"  nome="Tunel 10" />
+    <Sensor id="4"  nome="Tunel 09" />
+    <Sensor id="5"  nome="Tunel 08" />
+    <Sensor id="6"  nome="Estocagem 3" />
+    <Sensor id="7"  nome="Corredor dos Tuneis" />
+    <Sensor id="8"  nome="Docas Expedicao" />
+    <Sensor id="11" nome="Tunel 04" />
+    <Sensor id="12" nome="Tunel 05" />
+    <Sensor id="13" nome="Tunel 06" />
+    <Sensor id="14" nome="Tunel 07" />
+    <Sensor id="15" nome="Estocagem 01" />
+    <Sensor id="16" nome="Estocagem 02" />
+    <Sensor id="21" nome="Camara1" />
+    <Sensor id="22" nome="Camara2" />
+    <Sensor id="23" nome="Camara3" />
+    <Sensor id="24" nome="Camara4" />
+    <Sensor id="25" nome="Camara5" />
+    <Sensor id="26" nome="Camara6" />
+    <Sensor id="27" nome="Camara7" />
+    <Sensor id="28" nome="Pulmao" />
+    <Sensor id="29" nome="Tunel1" />
+    <Sensor id="30" nome="Tunel2" />
+    <Sensor id="31" nome="Tunel3" />
+    <Sensor id="32" nome="Estocagem Miudos" />
+    <Sensor id="33" nome="Estocagem Resfriados" />
+    <Sensor id="34" nome="Embalagem Secundaria" />
+    <Sensor id="35" nome="Desossa" />
+    <Sensor id="36" nome="Expedicao Carne com Osso" />
+    <Sensor id="37" nome="Paletizacaooo" />
+    <Sensor id="38" nome="Expedicao Caixaria" />
+    <Sensor id="39" nome="Embalagem Miudos" />
+    <Sensor id="40" nome="Bucharia Limpa" />
+    <Sensor id="41" nome="Bucharia Suja" />
+    <Sensor id="42" nome="Sala Miudos" />
+    <Sensor id="43" nome="Camara Resfriamento Miudos" />
+    <Sensor id="44" nome="Camara Resfriamento Estomago" />
+  </Sensores>
+
+</SisMasterConfig>

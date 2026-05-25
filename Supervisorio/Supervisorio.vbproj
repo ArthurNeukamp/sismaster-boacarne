@@ -20,12 +20,24 @@
 
   <ItemGroup>
     <PackageReference Include="System.Net.WebSockets.Client.Managed" Version="1.0.22" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.5" />
+    <PackageReference Include="QuestPDF" Version="2024.3.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Config\sismaster.config.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="FieldTalk.Modbus.Master">
       <HintPath>lib\FieldTalk.Modbus.Master.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\logo-boa-carne.jpg" />
   </ItemGroup>
 
   <!-- Copia a DLL nativa da FieldTalk para o diretório de saída após o build -->

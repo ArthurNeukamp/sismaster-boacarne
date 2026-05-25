@@ -1,4 +1,4 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class MainForm
     Inherits System.Windows.Forms.Form
 
@@ -47,6 +47,7 @@ Partial Class MainForm
         ToolStripSeparator3 = New ToolStripSeparator()
         ToolStripButton2 = New ToolStripButton()
         ToolStripSeparator5 = New ToolStripSeparator()
+        btnRelatorios = New ToolStripButton()
         lblResult = New Label()
         TimerCLP = New Timer(components)
         StatusStrip1 = New StatusStrip()
@@ -153,7 +154,7 @@ Partial Class MainForm
         BarraFerramentasPrincipal.Font = New Font("Segoe UI", 8F, FontStyle.Bold, GraphicsUnit.Point)
         BarraFerramentasPrincipal.GripMargin = New Padding(10, 2, 2, 2)
         BarraFerramentasPrincipal.ImageScalingSize = New Size(70, 70)
-        BarraFerramentasPrincipal.Items.AddRange(New ToolStripItem() {ToolStripButton1, btnMenuSADEMA, ToolStripSplitButton1, BtnAlaNova, ToolStripSeparator4, btnTuneis47, ToolStripSeparator1, btnCamaras, ToolStripSeparator2, btnMiudos, ToolStripSeparator3, ToolStripButton2, ToolStripSeparator5})
+        BarraFerramentasPrincipal.Items.AddRange(New ToolStripItem() {ToolStripButton1, btnMenuSADEMA, ToolStripSplitButton1, BtnAlaNova, ToolStripSeparator4, btnTuneis47, ToolStripSeparator1, btnCamaras, ToolStripSeparator2, btnMiudos, ToolStripSeparator3, ToolStripButton2, ToolStripSeparator5, btnRelatorios})
         BarraFerramentasPrincipal.Location = New Point(0, 33)
         BarraFerramentasPrincipal.Name = "BarraFerramentasPrincipal"
         BarraFerramentasPrincipal.Padding = New Padding(0, 0, 3, 0)
@@ -286,7 +287,17 @@ Partial Class MainForm
         ' 
         ToolStripSeparator5.Name = "ToolStripSeparator5"
         ToolStripSeparator5.Size = New Size(6, 104)
-        ' 
+        '
+        ' btnRelatorios
+        '
+        btnRelatorios.Image = My.Resources.relatorio_icon
+        btnRelatorios.ImageScaling = ToolStripItemImageScaling.SizeToFit
+        btnRelatorios.ImageTransparentColor = Color.White
+        btnRelatorios.Name = "btnRelatorios"
+        btnRelatorios.Size = New Size(90, 99)
+        btnRelatorios.Text = "Relatórios"
+        btnRelatorios.TextImageRelation = TextImageRelation.ImageAboveText
+        '
         ' lblResult
         ' 
         lblResult.AutoSize = True
@@ -884,4 +895,5 @@ Partial Class MainForm
     Friend WithEvents ToolStripSeparator4 As ToolStripSeparator
     Friend WithEvents ToolStripButton2 As ToolStripButton
     Friend WithEvents ToolStripSeparator5 As ToolStripSeparator
+    Friend WithEvents btnRelatorios As ToolStripButton
 End Class

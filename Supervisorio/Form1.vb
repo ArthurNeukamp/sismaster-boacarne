@@ -1,4 +1,4 @@
-﻿Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox
 Imports FieldTalk.Modbus.Master
 
 
@@ -39,6 +39,10 @@ Public Class MainForm
     Public varStatusSadema1 As Integer
     Public bitValvulaLiquidoSeparador As Boolean
 
+    Private _db           As DatabaseService
+    Private _aquisicao    As AquisicaoService
+    Private _frmRelatorio As FrmRelatorios
+
     Private Sub TimerCLP_Tick(sender As Object, e As EventArgs) Handles TimerCLP.Tick
         Dim readVals(100), i, j As Int16
         Dim slave, startRdReg, numRdRegs, varST As Int16
@@ -62,14 +66,15 @@ Public Class MainForm
             For i = 1 To 100
                 blcGeral(startRdReg - 1 + i) = readVals(i)
             Next
-            Ambientes(1).varTemperatura = blcGeral(2408)
-            Ambientes(2).varTemperatura = readVals(3)
-            Ambientes(3).varTemperatura = readVals(4)
-            Ambientes(4).varTemperatura = readVals(5)
-            Ambientes(5).varTemperatura = readVals(6)
-            Ambientes(6).varTemperatura = readVals(7)
-            Ambientes(7).varTemperatura = readVals(8)
-            Ambientes(8).varTemperatura = readVals(9)
+            Ambientes(1).varTemperatura = blcGeral(2408) 'Tunel 12
+            Ambientes(2).varTemperatura = readVals(3) 'Tunel 11
+            Ambientes(3).varTemperatura = readVals(4) 'Tunel 10
+            Ambientes(4).varTemperatura = readVals(5) 'Tunel 09
+            Ambientes(5).varTemperatura = readVals(6) 'Tunel 08
+            Ambientes(6).varTemperatura = readVals(7) 'Estocagem 3
+            Ambientes(7).varTemperatura = readVals(8) 'Corredor dos Túneis
+            Ambientes(8).varTemperatura = readVals(9) 'Docas Expedição
+            _aquisicao?.NotificarCLPConectado()
             Ambientes(1).varSetPoint = blcGeral(2418)
             Ambientes(2).varSetPoint = readVals(13)
             Ambientes(3).varSetPoint = readVals(14)
@@ -453,6 +458,20 @@ Public Class MainForm
         ConectarMBComp3()
         ConectarCLP2()
         ConectarM251()
+
+        ' Inicializar banco SQLite e servico de coleta periodica de temperaturas.
+        ' A coleta so inicia apos o primeiro CLP comunicar com sucesso.
+        Try
+            Dim config = ConfiguracaoApp.Carregar()
+            _db = New DatabaseService(config.CaminhoDb)
+            _db.InicializarBanco()
+            _aquisicao = New AquisicaoService(_db, config, Me)
+            _aquisicao.Iniciar()
+        Catch ex As Exception
+            MessageBox.Show("Banco de dados indisponível: " & ex.Message &
+                            Environment.NewLine & "Relatórios não estarão acessíveis.",
+                            "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
 
         Ambientes(1).varCLP = 1     'Tunel 12
         Ambientes(2).varCLP = 1     'Tunel 11
@@ -983,12 +1002,13 @@ Public Class MainForm
                 blcGeral2(startRdReg - 1 + i) = readVals(i)
             Next
 
-            Ambientes(11).varTemperatura = blcGeral2(120)
-            Ambientes(12).varTemperatura = blcGeral2(121)
-            Ambientes(13).varTemperatura = blcGeral2(122)
-            Ambientes(14).varTemperatura = blcGeral2(123)
-            Ambientes(15).varTemperatura = blcGeral2(124)
-            Ambientes(16).varTemperatura = blcGeral2(125)
+            Ambientes(11).varTemperatura = blcGeral2(120) 'Tunel 04
+            Ambientes(12).varTemperatura = blcGeral2(121) 'Tunel 05
+            Ambientes(13).varTemperatura = blcGeral2(122) 'Tunel 06
+            Ambientes(14).varTemperatura = blcGeral2(123) 'Tunel 07
+            Ambientes(15).varTemperatura = blcGeral2(124) 'Estocagem 01
+            Ambientes(16).varTemperatura = blcGeral2(125) 'Estocagem 02
+            _aquisicao?.NotificarCLPConectado()
 
             Ambientes(11).varSetPoint = blcGeral2(140)
             Ambientes(12).varSetPoint = blcGeral2(141)
@@ -1268,6 +1288,7 @@ Public Class MainForm
             Ambientes(42).varTemperatura = blcGeral3(321)   'Sala Miúdos
             Ambientes(43).varTemperatura = blcGeral3(322)   'Camara Resfriamento Miúdos
             Ambientes(44).varTemperatura = blcGeral3(323)   'Camara Resfriamento Estomago
+            _aquisicao?.NotificarCLPConectado()
 
             Ambientes(21).varSetPoint = blcGeral3(350)
             Ambientes(22).varSetPoint = blcGeral3(351)
@@ -1841,6 +1862,39 @@ Public Class MainForm
         Valor = 2
         'Reset da comunicação serial modbus RTU no clp da Siemens sala de máquinas
         res = myProtocol.writeSingleRegister(1, 2407 + 1, Valor)
+    End Sub
+
+    Private Sub btnRelatorios_Click(sender As Object,
+                                    e As EventArgs) _
+            Handles btnRelatorios.Click
+        AbrirRelatorios()
+    End Sub
+
+    Private Sub RelatóriosToolStripMenuItem_Click(sender As Object,
+                                                   e As EventArgs) _
+            Handles RelatóriosToolStripMenuItem.Click
+        AbrirRelatorios()
+    End Sub
+
+    Private Sub AbrirRelatorios()
+        If _db Is Nothing Then
+            MessageBox.Show("Banco de dados não disponível.",
+                            "Relatórios", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        ' Se ja existe uma janela aberta, traz para frente em vez de abrir outra.
+        If _frmRelatorio IsNot Nothing AndAlso Not _frmRelatorio.IsDisposed Then
+            If _frmRelatorio.WindowState = FormWindowState.Minimized Then
+                _frmRelatorio.WindowState = FormWindowState.Normal
+            End If
+            _frmRelatorio.Activate()
+            Return
+        End If
+
+        _frmRelatorio = New FrmRelatorios(_db, ConfiguracaoApp.Carregar())
+        AddHandler _frmRelatorio.FormClosed, Sub(s, ev) _frmRelatorio = Nothing
+        _frmRelatorio.Show(Me)
     End Sub
 
 End Class
