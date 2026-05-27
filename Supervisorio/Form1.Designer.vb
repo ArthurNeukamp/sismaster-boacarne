@@ -109,7 +109,7 @@ Partial Class MainForm
         Label1.Name = "Label1"
         Label1.Size = New Size(135, 25)
         Label1.TabIndex = 0
-        Label1.Text = "Hello Worllllllld!"
+        'Label1.Text = "Hello Worllllllld!"
         ' 
         ' MenuPrincipal
         ' 

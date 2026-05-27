@@ -20,7 +20,7 @@ Public Class FrmRelatorios
         dtpFim.Value    = DateTime.Now.Date.AddDays(1).AddSeconds(-1)
 
         cbSensor.Items.Clear()
-        For Each kvp In _config.Sensores.OrderBy(Function(x) x.Key)
+        For Each kvp In _config.Sensores.OrderBy(Function(x) x.Value)
             cbSensor.Items.Add(New SensorItem(kvp.Key, kvp.Value))
         Next
         If cbSensor.Items.Count > 0 Then cbSensor.SelectedIndex = 0

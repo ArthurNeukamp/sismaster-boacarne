@@ -7,7 +7,7 @@
        ColetarSemConexao: true = continua gravando (clp_ok=0) se o CLP perder comunicação. -->
   <BancoDados>
     <CaminhoDb>dados\sensores.db</CaminhoDb>
-    <IntervaloColetaMinutos>5</IntervaloColetaMinutos>
+    <IntervaloColetaMinutos>10</IntervaloColetaMinutos>
     <ColetarSemConexao>true</ColetarSemConexao>
     <RetencaoMeses>12</RetencaoMeses>
   </BancoDados>
@@ -18,7 +18,7 @@
        PeriodoPadraoAtrasoDias: janela de datas padrão ao abrir a tela de relatórios. -->
   <Relatorios>
     <NomeCliente>Boa Carne</NomeCliente>
-    <NomeInstalacao>Frigorifico - Planta 1</NomeInstalacao>
+    <NomeInstalacao>Frigorifico Boa Carne - Colider/MT</NomeInstalacao>
     <FooterTexto>SisMaster Supervisório de Refrigeração | Gerado em {DATA} | {HORA}</FooterTexto>
     <PastaExportacao>relatorios</PastaExportacao>
     <PeriodoPadraoAtrasoDias>7</PeriodoPadraoAtrasoDias>
@@ -28,7 +28,7 @@
        Altere o atributo "nome" para customizar o rótulo.
        O "id" é fixo e corresponde ao índice do array Ambientes() no código. -->
   <Sensores>
-    <Sensor id="1"  nome="Tunel 12" />
+    <Sensor id="1"  nome="Tunel 12_a" />
     <Sensor id="2"  nome="Tunel 11" />
     <Sensor id="3"  nome="Tunel 10" />
     <Sensor id="4"  nome="Tunel 09" />
