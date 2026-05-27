@@ -4,16 +4,8 @@ Public Class AquisicaoService
     Private ReadOnly _config As ConfiguracaoApp
     Private ReadOnly _form   As MainForm
     Private _timer           As System.Timers.Timer
+    Private _ultimaLimpeza   As Date = Date.MinValue
 
-    ' Fica True apos o primeiro sucesso de leitura de qualquer CLP.
-    ' Nao volta a False — coleta continua mesmo com queda posterior.
-    Private _clpConectou As Boolean = False
-
-    ' Controla a limpeza diaria de registros antigos.
-    ' Inicializado com MinValue para garantir execucao na primeira coleta do dia.
-    Private _ultimaLimpeza As Date = Date.MinValue
-
-    ' Indices fixos dos 38 sensores monitorados, conforme Form1.vb.
     Private Shared ReadOnly _sensorIds As Integer() = {
         1, 2, 3, 4, 5, 6, 7, 8,
         11, 12, 13, 14, 15, 16,
@@ -27,35 +19,43 @@ Public Class AquisicaoService
         _form = form
     End Sub
 
-    ' Inicia o timer de coleta em background thread.
-    ' Chamado em MainForm_Shown apos InicializarBanco().
+    ' Inicia o timer com sincronismo de horário cravado e atraso de segurança inicial.
     Public Sub Iniciar()
-        _timer = New System.Timers.Timer(_config.IntervaloColetaMinutos * 60 * 1000)
+        Dim agora = DateTime.Now
+        Dim msAteProximo = ObterMilisegundosAteProximoIntervalo(agora, _config.IntervaloColetaMinutos)
+        
+        ' Se o próximo intervalo estiver a menos de 30 segundos do início do software,
+        ' pula para o próximo intervalo subsequente para garantir que os CLPs conectem primeiro.
+        If msAteProximo < 30000 Then
+            msAteProximo += (_config.IntervaloColetaMinutos * 60 * 1000)
+        End If
+        
+        _timer = New System.Timers.Timer(msAteProximo)
         AddHandler _timer.Elapsed, AddressOf OnTick
         _timer.AutoReset = True
         _timer.Start()
     End Sub
 
-    ' Chamado pelos timers de CLP em Form1.vb apos leitura bem-sucedida.
-    ' Habilita a coleta a partir do primeiro CLP que comunicar.
+    ' Método obsoleto mantido apenas por compatibilidade com a chamada existente do MainForm.
     Public Sub NotificarCLPConectado()
-        _clpConectou = True
+        ' Não faz nada, pois a coleta agora é contínua desde a inicialização.
     End Sub
 
-    ' Executado na background thread a cada intervalo configurado.
     Private Sub OnTick(sender As Object, e As System.Timers.ElapsedEventArgs)
-        If Not _clpConectou Then Return
-
+        ' Captura o horário exato IMEDIATAMENTE na thread de background do Timer,
+        ' ficando totalmente imune a qualquer congelamento ou lentidão da UI Thread.
+        Dim agoraRaw = DateTime.Now
+        
         Try
             Dim clpAtivo As Boolean = _form.myProtocol?.isOpen() OrElse
                                       _form.CLP_2?.isOpen() OrElse
                                       _form.M251?.isOpen()
 
-            If Not clpAtivo AndAlso Not _config.ColetarSemConexao Then Return
+            Dim dataColeta = ObterDataHoraAlinhada(agoraRaw, _config.IntervaloColetaMinutos)
 
-            ' Captura os valores na UI thread para evitar leitura concorrente.
+            ' Coleta na UI thread para evitar conflito concorrente de leitura de variáveis.
             Dim snapshot As List(Of LeituraDto) = Nothing
-            _form.Invoke(Sub() snapshot = ColetarSnapshot(clpAtivo))
+            _form.Invoke(Sub() snapshot = ColetarSnapshot(clpAtivo, dataColeta))
 
             If snapshot IsNot Nothing Then
                 _db.InserirLote(snapshot)
@@ -68,14 +68,18 @@ Public Class AquisicaoService
             End If
 
         Catch
-            ' Falhas silenciosas para nao interferir no funcionamento do supervisorio.
+            ' Falhas silenciosas
+        Finally
+            ' Recalcula o próximo intervalo cravado e auto-corrige o Timer para o próximo ciclo
+            Try
+                Dim proxIntervaloMs = ObterMilisegundosAteProximoIntervalo(DateTime.Now, _config.IntervaloColetaMinutos)
+                _timer.Interval = proxIntervaloMs
+            Catch
+            End Try
         End Try
     End Sub
 
-    ' Executado na UI thread (dentro do Invoke).
-    ' Le varTemperatura de cada ambiente e monta a lista de leituras.
-    Private Function ColetarSnapshot(clpAtivo As Boolean) As List(Of LeituraDto)
-        Dim agora    = DateTime.Now
+    Private Function ColetarSnapshot(clpAtivo As Boolean, dataColeta As DateTime) As List(Of LeituraDto)
         Dim leituras = New List(Of LeituraDto)(_sensorIds.Length)
 
         For Each sid In _sensorIds
@@ -83,7 +87,7 @@ Public Class AquisicaoService
             _config.Sensores.TryGetValue(sid, nomeConfigurado)
 
             leituras.Add(New LeituraDto With {
-                .DataHora    = agora,
+                .DataHora    = dataColeta,
                 .SensorId    = sid,
                 .Nome        = nomeConfigurado,
                 .Temperatura = _form.Ambientes(sid).varTemperatura / 10.0,
@@ -91,6 +95,26 @@ Public Class AquisicaoService
             })
         Next
         Return leituras
+    End Function
+
+    ' Calcula matematicamente os milissegundos restantes até a próxima borda cheia do relógio.
+    Private Function ObterMilisegundosAteProximoIntervalo(agora As DateTime, intervaloMinutos As Integer) As Double
+        If intervaloMinutos <= 0 Then intervaloMinutos = 1
+        Dim minutosAtuais = agora.Minute
+        Dim minutosProximo = ((minutosAtuais \ intervaloMinutos) + 1) * intervaloMinutos
+        Dim proximaData = agora.Date.AddHours(agora.Hour).AddMinutes(minutosProximo)
+        Dim diff = proximaData - agora
+        Return diff.TotalMilliseconds
+    End Function
+
+    ' Arredonda o DateTime para o limite do relógio mais próximo com segundos fixados em :00.
+    Private Function ObterDataHoraAlinhada(agora As DateTime, intervaloMinutos As Integer) As DateTime
+        If intervaloMinutos <= 0 Then intervaloMinutos = 1
+        Dim minutosTotais = agora.Hour * 60 + agora.Minute
+        Dim segundosTotais = agora.Second
+        Dim fracaoMinuto = minutosTotais + (segundosTotais / 60.0)
+        Dim intervaloArredondado = Math.Round(fracaoMinuto / intervaloMinutos) * intervaloMinutos
+        Return agora.Date.AddMinutes(CInt(intervaloArredondado))
     End Function
 
 End Class
