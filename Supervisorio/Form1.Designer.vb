@@ -104,12 +104,10 @@ Partial Class MainForm
         ' Label1
         ' 
         Label1.AutoSize = True
-        Label1.Location = New Point(1720, 189)
-        Label1.Margin = New Padding(4, 0, 4, 0)
+        Label1.Location = New Point(1147, 126)
         Label1.Name = "Label1"
-        Label1.Size = New Size(135, 25)
+        Label1.Size = New Size(0, 15)
         Label1.TabIndex = 0
-        'Label1.Text = "Hello Worllllllld!"
         ' 
         ' MenuPrincipal
         ' 
@@ -119,33 +117,33 @@ Partial Class MainForm
         MenuPrincipal.Items.AddRange(New ToolStripItem() {ArquivoToolStripMenuItem, RelatóriosToolStripMenuItem, ConfiguraçõesToolStripMenuItem, AjudaToolStripMenuItem})
         MenuPrincipal.Location = New Point(0, 0)
         MenuPrincipal.Name = "MenuPrincipal"
-        MenuPrincipal.Padding = New Padding(8, 2, 0, 2)
-        MenuPrincipal.Size = New Size(1959, 33)
+        MenuPrincipal.Padding = New Padding(5, 1, 0, 1)
+        MenuPrincipal.Size = New Size(1283, 24)
         MenuPrincipal.TabIndex = 1
         MenuPrincipal.Text = "MenuPrincipal"
         ' 
         ' ArquivoToolStripMenuItem
         ' 
         ArquivoToolStripMenuItem.Name = "ArquivoToolStripMenuItem"
-        ArquivoToolStripMenuItem.Size = New Size(94, 29)
+        ArquivoToolStripMenuItem.Size = New Size(61, 22)
         ArquivoToolStripMenuItem.Text = "Arquivo"
         ' 
         ' RelatóriosToolStripMenuItem
         ' 
         RelatóriosToolStripMenuItem.Name = "RelatóriosToolStripMenuItem"
-        RelatóriosToolStripMenuItem.Size = New Size(112, 29)
+        RelatóriosToolStripMenuItem.Size = New Size(71, 22)
         RelatóriosToolStripMenuItem.Text = "Relatórios"
         ' 
         ' ConfiguraçõesToolStripMenuItem
         ' 
         ConfiguraçõesToolStripMenuItem.Name = "ConfiguraçõesToolStripMenuItem"
-        ConfiguraçõesToolStripMenuItem.Size = New Size(147, 29)
+        ConfiguraçõesToolStripMenuItem.Size = New Size(95, 22)
         ConfiguraçõesToolStripMenuItem.Text = "Configurações"
         ' 
         ' AjudaToolStripMenuItem
         ' 
         AjudaToolStripMenuItem.Name = "AjudaToolStripMenuItem"
-        AjudaToolStripMenuItem.Size = New Size(76, 29)
+        AjudaToolStripMenuItem.Size = New Size(50, 22)
         AjudaToolStripMenuItem.Text = "Ajuda"
         ' 
         ' BarraFerramentasPrincipal
@@ -155,10 +153,10 @@ Partial Class MainForm
         BarraFerramentasPrincipal.GripMargin = New Padding(10, 2, 2, 2)
         BarraFerramentasPrincipal.ImageScalingSize = New Size(70, 70)
         BarraFerramentasPrincipal.Items.AddRange(New ToolStripItem() {ToolStripButton1, btnMenuSADEMA, ToolStripSplitButton1, BtnAlaNova, ToolStripSeparator4, btnTuneis47, ToolStripSeparator1, btnCamaras, ToolStripSeparator2, btnMiudos, ToolStripSeparator3, ToolStripButton2, ToolStripSeparator5, btnRelatorios})
-        BarraFerramentasPrincipal.Location = New Point(0, 33)
+        BarraFerramentasPrincipal.Location = New Point(0, 24)
         BarraFerramentasPrincipal.Name = "BarraFerramentasPrincipal"
-        BarraFerramentasPrincipal.Padding = New Padding(0, 0, 3, 0)
-        BarraFerramentasPrincipal.Size = New Size(1959, 104)
+        BarraFerramentasPrincipal.Padding = New Padding(0, 0, 2, 0)
+        BarraFerramentasPrincipal.Size = New Size(1283, 92)
         BarraFerramentasPrincipal.TabIndex = 2
         BarraFerramentasPrincipal.Text = "Barra Atalhos"
         ' 
@@ -168,7 +166,7 @@ Partial Class MainForm
         ToolStripButton1.Image = CType(resources.GetObject("ToolStripButton1.Image"), Image)
         ToolStripButton1.ImageTransparentColor = Color.Magenta
         ToolStripButton1.Name = "ToolStripButton1"
-        ToolStripButton1.Size = New Size(120, 99)
+        ToolStripButton1.Size = New Size(79, 89)
         ToolStripButton1.Text = "Reset Falhas"
         ToolStripButton1.TextImageRelation = TextImageRelation.ImageAboveText
         ' 
@@ -180,7 +178,7 @@ Partial Class MainForm
         btnMenuSADEMA.ImageTransparentColor = Color.Magenta
         btnMenuSADEMA.Margin = New Padding(3, 1, 3, 2)
         btnMenuSADEMA.Name = "btnMenuSADEMA"
-        btnMenuSADEMA.Size = New Size(83, 101)
+        btnMenuSADEMA.Size = New Size(74, 89)
         btnMenuSADEMA.Text = "Sadema"
         btnMenuSADEMA.TextImageRelation = TextImageRelation.ImageAboveText
         ' 
@@ -191,26 +189,26 @@ Partial Class MainForm
         ToolStripSplitButton1.ImageScaling = ToolStripItemImageScaling.None
         ToolStripSplitButton1.ImageTransparentColor = Color.Magenta
         ToolStripSplitButton1.Name = "ToolStripSplitButton1"
-        ToolStripSplitButton1.Size = New Size(137, 99)
+        ToolStripSplitButton1.Size = New Size(96, 89)
         ToolStripSplitButton1.Text = "Compressores"
         ToolStripSplitButton1.TextImageRelation = TextImageRelation.ImageAboveText
         ' 
         ' Compressor1ToolStripMenuItem
         ' 
         Compressor1ToolStripMenuItem.Name = "Compressor1ToolStripMenuItem"
-        Compressor1ToolStripMenuItem.Size = New Size(213, 34)
+        Compressor1ToolStripMenuItem.Size = New Size(145, 22)
         Compressor1ToolStripMenuItem.Text = "Compressor 1"
         ' 
         ' Compressor2ToolStripMenuItem
         ' 
         Compressor2ToolStripMenuItem.Name = "Compressor2ToolStripMenuItem"
-        Compressor2ToolStripMenuItem.Size = New Size(213, 34)
+        Compressor2ToolStripMenuItem.Size = New Size(145, 22)
         Compressor2ToolStripMenuItem.Text = "Compressor 2"
         ' 
         ' Compressor3ToolStripMenuItem
         ' 
         Compressor3ToolStripMenuItem.Name = "Compressor3ToolStripMenuItem"
-        Compressor3ToolStripMenuItem.Size = New Size(213, 34)
+        Compressor3ToolStripMenuItem.Size = New Size(145, 22)
         Compressor3ToolStripMenuItem.Text = "Compressor 3"
         ' 
         ' BtnAlaNova
@@ -219,14 +217,14 @@ Partial Class MainForm
         BtnAlaNova.ImageScaling = ToolStripItemImageScaling.None
         BtnAlaNova.ImageTransparentColor = Color.Magenta
         BtnAlaNova.Name = "BtnAlaNova"
-        BtnAlaNova.Size = New Size(108, 99)
+        BtnAlaNova.Size = New Size(75, 89)
         BtnAlaNova.Text = "Túneis 8 - 12"
         BtnAlaNova.TextImageRelation = TextImageRelation.ImageAboveText
         ' 
         ' ToolStripSeparator4
         ' 
         ToolStripSeparator4.Name = "ToolStripSeparator4"
-        ToolStripSeparator4.Size = New Size(6, 104)
+        ToolStripSeparator4.Size = New Size(6, 92)
         ' 
         ' btnTuneis47
         ' 
@@ -234,14 +232,14 @@ Partial Class MainForm
         btnTuneis47.ImageScaling = ToolStripItemImageScaling.None
         btnTuneis47.ImageTransparentColor = Color.Magenta
         btnTuneis47.Name = "btnTuneis47"
-        btnTuneis47.Size = New Size(99, 99)
+        btnTuneis47.Size = New Size(74, 89)
         btnTuneis47.Text = "Túneis 4 - 7"
         btnTuneis47.TextImageRelation = TextImageRelation.ImageAboveText
         ' 
         ' ToolStripSeparator1
         ' 
         ToolStripSeparator1.Name = "ToolStripSeparator1"
-        ToolStripSeparator1.Size = New Size(6, 104)
+        ToolStripSeparator1.Size = New Size(6, 92)
         ' 
         ' btnCamaras
         ' 
@@ -249,14 +247,14 @@ Partial Class MainForm
         btnCamaras.ImageScaling = ToolStripItemImageScaling.None
         btnCamaras.ImageTransparentColor = Color.Magenta
         btnCamaras.Name = "btnCamaras"
-        btnCamaras.Size = New Size(142, 99)
+        btnCamaras.Size = New Size(97, 89)
         btnCamaras.Text = "Câmaras Carcaça"
         btnCamaras.TextImageRelation = TextImageRelation.ImageAboveText
         ' 
         ' ToolStripSeparator2
         ' 
         ToolStripSeparator2.Name = "ToolStripSeparator2"
-        ToolStripSeparator2.Size = New Size(6, 104)
+        ToolStripSeparator2.Size = New Size(6, 92)
         ' 
         ' btnMiudos
         ' 
@@ -264,14 +262,14 @@ Partial Class MainForm
         btnMiudos.ImageScaling = ToolStripItemImageScaling.None
         btnMiudos.ImageTransparentColor = Color.Magenta
         btnMiudos.Name = "btnMiudos"
-        btnMiudos.Size = New Size(124, 99)
+        btnMiudos.Size = New Size(87, 89)
         btnMiudos.Text = "Túneis Miúdos"
         btnMiudos.TextImageRelation = TextImageRelation.ImageAboveText
         ' 
         ' ToolStripSeparator3
         ' 
         ToolStripSeparator3.Name = "ToolStripSeparator3"
-        ToolStripSeparator3.Size = New Size(6, 104)
+        ToolStripSeparator3.Size = New Size(6, 92)
         ' 
         ' ToolStripButton2
         ' 
@@ -279,32 +277,30 @@ Partial Class MainForm
         ToolStripButton2.ImageScaling = ToolStripItemImageScaling.None
         ToolStripButton2.ImageTransparentColor = Color.Magenta
         ToolStripButton2.Name = "ToolStripButton2"
-        ToolStripButton2.Size = New Size(113, 99)
+        ToolStripButton2.Size = New Size(77, 89)
         ToolStripButton2.Text = "Climatizados"
         ToolStripButton2.TextImageRelation = TextImageRelation.ImageAboveText
         ' 
         ' ToolStripSeparator5
         ' 
         ToolStripSeparator5.Name = "ToolStripSeparator5"
-        ToolStripSeparator5.Size = New Size(6, 104)
-        '
+        ToolStripSeparator5.Size = New Size(6, 92)
+        ' 
         ' btnRelatorios
-        '
-        btnRelatorios.Image = My.Resources.relatorio_icon
-        btnRelatorios.ImageScaling = ToolStripItemImageScaling.SizeToFit
+        ' 
+        btnRelatorios.Image = My.Resources.Resources.relatorio_icon
         btnRelatorios.ImageTransparentColor = Color.White
         btnRelatorios.Name = "btnRelatorios"
-        btnRelatorios.Size = New Size(90, 99)
+        btnRelatorios.Size = New Size(74, 89)
         btnRelatorios.Text = "Relatórios"
         btnRelatorios.TextImageRelation = TextImageRelation.ImageAboveText
-        '
+        ' 
         ' lblResult
         ' 
         lblResult.AutoSize = True
-        lblResult.Location = New Point(38, 1060)
-        lblResult.Margin = New Padding(4, 0, 4, 0)
+        lblResult.Location = New Point(25, 707)
         lblResult.Name = "lblResult"
-        lblResult.Size = New Size(63, 25)
+        lblResult.Size = New Size(41, 15)
         lblResult.TabIndex = 3
         lblResult.Text = "Label2"
         ' 
@@ -315,11 +311,11 @@ Partial Class MainForm
         ' StatusStrip1
         ' 
         StatusStrip1.ImageScalingSize = New Size(20, 20)
-        StatusStrip1.Items.AddRange(New ToolStripItem() {ToolStripStatusLabel1, BarraStatusLabel2, BarraStatusLabel3, BarraStatusLabel4, BarraStatusLabel5, BarraStatusLabel6, BarraStatusM251})
-        StatusStrip1.Location = New Point(0, 1092)
+        StatusStrip1.Items.AddRange(New ToolStripItem() {BarraStatusLabel2, ToolStripStatusLabel1, BarraStatusLabel3, BarraStatusLabel4, BarraStatusLabel5, BarraStatusLabel6, BarraStatusM251})
+        StatusStrip1.Location = New Point(0, 685)
         StatusStrip1.Name = "StatusStrip1"
-        StatusStrip1.Padding = New Padding(2, 0, 18, 0)
-        StatusStrip1.Size = New Size(1959, 30)
+        StatusStrip1.Padding = New Padding(1, 0, 12, 0)
+        StatusStrip1.Size = New Size(1283, 22)
         StatusStrip1.TabIndex = 5
         StatusStrip1.Text = "CLP: "
         ' 
@@ -327,49 +323,49 @@ Partial Class MainForm
         ' 
         ToolStripStatusLabel1.Margin = New Padding(0, 3, 10, 2)
         ToolStripStatusLabel1.Name = "ToolStripStatusLabel1"
-        ToolStripStatusLabel1.Size = New Size(45, 25)
+        ToolStripStatusLabel1.Size = New Size(31, 17)
         ToolStripStatusLabel1.Text = "CLP:"
         ' 
         ' BarraStatusLabel2
         ' 
         BarraStatusLabel2.Margin = New Padding(0, 3, 10, 2)
         BarraStatusLabel2.Name = "BarraStatusLabel2"
-        BarraStatusLabel2.Size = New Size(104, 25)
+        BarraStatusLabel2.Size = New Size(68, 17)
         BarraStatusLabel2.Text = "Contadores"
         ' 
         ' BarraStatusLabel3
         ' 
         BarraStatusLabel3.Margin = New Padding(10, 3, 0, 2)
         BarraStatusLabel3.Name = "BarraStatusLabel3"
-        BarraStatusLabel3.Size = New Size(124, 25)
+        BarraStatusLabel3.Size = New Size(80, 17)
         BarraStatusLabel3.Text = "Compressor 1"
         ' 
         ' BarraStatusLabel4
         ' 
         BarraStatusLabel4.Margin = New Padding(10, 3, 0, 2)
         BarraStatusLabel4.Name = "BarraStatusLabel4"
-        BarraStatusLabel4.Size = New Size(124, 25)
+        BarraStatusLabel4.Size = New Size(80, 17)
         BarraStatusLabel4.Text = "Compressor 2"
         ' 
         ' BarraStatusLabel5
         ' 
         BarraStatusLabel5.Margin = New Padding(10, 3, 0, 2)
         BarraStatusLabel5.Name = "BarraStatusLabel5"
-        BarraStatusLabel5.Size = New Size(124, 25)
+        BarraStatusLabel5.Size = New Size(80, 17)
         BarraStatusLabel5.Text = "Compressor 3"
         ' 
         ' BarraStatusLabel6
         ' 
         BarraStatusLabel6.Margin = New Padding(10, 3, 0, 2)
         BarraStatusLabel6.Name = "BarraStatusLabel6"
-        BarraStatusLabel6.Size = New Size(56, 25)
+        BarraStatusLabel6.Size = New Size(37, 17)
         BarraStatusLabel6.Text = "CLP 2"
         ' 
         ' BarraStatusM251
         ' 
         BarraStatusM251.Margin = New Padding(10, 3, 0, 2)
         BarraStatusM251.Name = "BarraStatusM251"
-        BarraStatusM251.Size = New Size(67, 25)
+        BarraStatusM251.Size = New Size(42, 17)
         BarraStatusM251.Text = "M251: "
         ' 
         ' TimerCompressor1
@@ -415,10 +411,9 @@ Partial Class MainForm
         PainelSadema.Controls.Add(Label5)
         PainelSadema.Controls.Add(Label4)
         PainelSadema.Controls.Add(lblNomeAmbiente)
-        PainelSadema.Location = New Point(1588, 216)
-        PainelSadema.Margin = New Padding(4)
+        PainelSadema.Location = New Point(1059, 144)
         PainelSadema.Name = "PainelSadema"
-        PainelSadema.Size = New Size(364, 800)
+        PainelSadema.Size = New Size(243, 533)
         PainelSadema.TabIndex = 17
         ' 
         ' lblDadosCP3
@@ -427,9 +422,10 @@ Partial Class MainForm
         lblDadosCP3.BorderStyle = BorderStyle.FixedSingle
         lblDadosCP3.Font = New Font("Segoe UI", 8F, FontStyle.Bold, GraphicsUnit.Point)
         lblDadosCP3.ForeColor = Color.Lime
-        lblDadosCP3.Location = New Point(201, 412)
+        lblDadosCP3.Location = New Point(134, 275)
+        lblDadosCP3.Margin = New Padding(2, 0, 2, 0)
         lblDadosCP3.Name = "lblDadosCP3"
-        lblDadosCP3.Size = New Size(158, 24)
+        lblDadosCP3.Size = New Size(106, 17)
         lblDadosCP3.TabIndex = 61
         lblDadosCP3.Text = "999 A - 9999 RPM"
         lblDadosCP3.TextAlign = ContentAlignment.MiddleCenter
@@ -439,9 +435,10 @@ Partial Class MainForm
         Label18.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label18.BorderStyle = BorderStyle.FixedSingle
         Label18.Font = New Font("Segoe UI", 7F, FontStyle.Bold, GraphicsUnit.Point)
-        Label18.Location = New Point(4, 412)
+        Label18.Location = New Point(3, 275)
+        Label18.Margin = New Padding(2, 0, 2, 0)
         Label18.Name = "Label18"
-        Label18.Size = New Size(192, 24)
+        Label18.Size = New Size(129, 17)
         Label18.TabIndex = 60
         Label18.Text = "Compressor 3"
         Label18.TextAlign = ContentAlignment.MiddleLeft
@@ -452,9 +449,10 @@ Partial Class MainForm
         lblDadosCP2.BorderStyle = BorderStyle.FixedSingle
         lblDadosCP2.Font = New Font("Segoe UI", 8F, FontStyle.Bold, GraphicsUnit.Point)
         lblDadosCP2.ForeColor = Color.Lime
-        lblDadosCP2.Location = New Point(201, 304)
+        lblDadosCP2.Location = New Point(134, 203)
+        lblDadosCP2.Margin = New Padding(2, 0, 2, 0)
         lblDadosCP2.Name = "lblDadosCP2"
-        lblDadosCP2.Size = New Size(158, 24)
+        lblDadosCP2.Size = New Size(106, 17)
         lblDadosCP2.TabIndex = 59
         lblDadosCP2.Text = "999 A - 9999 RPM"
         lblDadosCP2.TextAlign = ContentAlignment.MiddleCenter
@@ -464,9 +462,10 @@ Partial Class MainForm
         Label16.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label16.BorderStyle = BorderStyle.FixedSingle
         Label16.Font = New Font("Segoe UI", 7F, FontStyle.Bold, GraphicsUnit.Point)
-        Label16.Location = New Point(4, 304)
+        Label16.Location = New Point(3, 203)
+        Label16.Margin = New Padding(2, 0, 2, 0)
         Label16.Name = "Label16"
-        Label16.Size = New Size(192, 24)
+        Label16.Size = New Size(129, 17)
         Label16.TabIndex = 58
         Label16.Text = "Compressor 2"
         Label16.TextAlign = ContentAlignment.MiddleLeft
@@ -477,9 +476,10 @@ Partial Class MainForm
         lblDadosCP1.BorderStyle = BorderStyle.FixedSingle
         lblDadosCP1.Font = New Font("Segoe UI", 8F, FontStyle.Bold, GraphicsUnit.Point)
         lblDadosCP1.ForeColor = Color.Lime
-        lblDadosCP1.Location = New Point(201, 196)
+        lblDadosCP1.Location = New Point(134, 131)
+        lblDadosCP1.Margin = New Padding(2, 0, 2, 0)
         lblDadosCP1.Name = "lblDadosCP1"
-        lblDadosCP1.Size = New Size(158, 24)
+        lblDadosCP1.Size = New Size(106, 17)
         lblDadosCP1.TabIndex = 57
         lblDadosCP1.Text = "999 A - 9999 RPM"
         lblDadosCP1.TextAlign = ContentAlignment.MiddleCenter
@@ -489,9 +489,10 @@ Partial Class MainForm
         Label173.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label173.BorderStyle = BorderStyle.FixedSingle
         Label173.Font = New Font("Segoe UI", 7F, FontStyle.Bold, GraphicsUnit.Point)
-        Label173.Location = New Point(4, 196)
+        Label173.Location = New Point(3, 131)
+        Label173.Margin = New Padding(2, 0, 2, 0)
         Label173.Name = "Label173"
-        Label173.Size = New Size(192, 24)
+        Label173.Size = New Size(129, 17)
         Label173.TabIndex = 56
         Label173.Text = "Compressor 1"
         Label173.TextAlign = ContentAlignment.MiddleLeft
@@ -502,9 +503,10 @@ Partial Class MainForm
         lblDescargaCP3.BorderStyle = BorderStyle.FixedSingle
         lblDescargaCP3.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
         lblDescargaCP3.ForeColor = Color.Cyan
-        lblDescargaCP3.Location = New Point(201, 480)
+        lblDescargaCP3.Location = New Point(134, 320)
+        lblDescargaCP3.Margin = New Padding(2, 0, 2, 0)
         lblDescargaCP3.Name = "lblDescargaCP3"
-        lblDescargaCP3.Size = New Size(158, 38)
+        lblDescargaCP3.Size = New Size(106, 26)
         lblDescargaCP3.TabIndex = 32
         lblDescargaCP3.Text = "99999"
         lblDescargaCP3.TextAlign = ContentAlignment.MiddleCenter
@@ -514,9 +516,10 @@ Partial Class MainForm
         Label11.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label11.BorderStyle = BorderStyle.FixedSingle
         Label11.Font = New Font("Segoe UI", 11.25F, FontStyle.Bold, GraphicsUnit.Point)
-        Label11.Location = New Point(4, 480)
+        Label11.Location = New Point(3, 320)
+        Label11.Margin = New Padding(2, 0, 2, 0)
         Label11.Name = "Label11"
-        Label11.Size = New Size(192, 38)
+        Label11.Size = New Size(129, 26)
         Label11.TabIndex = 31
         Label11.Text = "Descarga CP3"
         Label11.TextAlign = ContentAlignment.MiddleCenter
@@ -527,9 +530,10 @@ Partial Class MainForm
         lblSuccaoCP3.BorderStyle = BorderStyle.FixedSingle
         lblSuccaoCP3.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
         lblSuccaoCP3.ForeColor = Color.Cyan
-        lblSuccaoCP3.Location = New Point(201, 440)
+        lblSuccaoCP3.Location = New Point(134, 293)
+        lblSuccaoCP3.Margin = New Padding(2, 0, 2, 0)
         lblSuccaoCP3.Name = "lblSuccaoCP3"
-        lblSuccaoCP3.Size = New Size(158, 38)
+        lblSuccaoCP3.Size = New Size(106, 26)
         lblSuccaoCP3.TabIndex = 30
         lblSuccaoCP3.Text = "99999"
         lblSuccaoCP3.TextAlign = ContentAlignment.MiddleCenter
@@ -539,9 +543,10 @@ Partial Class MainForm
         Label14.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label14.BorderStyle = BorderStyle.FixedSingle
         Label14.Font = New Font("Segoe UI", 11.25F, FontStyle.Bold, GraphicsUnit.Point)
-        Label14.Location = New Point(4, 440)
+        Label14.Location = New Point(3, 293)
+        Label14.Margin = New Padding(2, 0, 2, 0)
         Label14.Name = "Label14"
-        Label14.Size = New Size(192, 38)
+        Label14.Size = New Size(129, 26)
         Label14.TabIndex = 29
         Label14.Text = "Sucção CP3"
         Label14.TextAlign = ContentAlignment.MiddleCenter
@@ -552,9 +557,10 @@ Partial Class MainForm
         lblDescargaCP2.BorderStyle = BorderStyle.FixedSingle
         lblDescargaCP2.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
         lblDescargaCP2.ForeColor = Color.Cyan
-        lblDescargaCP2.Location = New Point(201, 372)
+        lblDescargaCP2.Location = New Point(134, 248)
+        lblDescargaCP2.Margin = New Padding(2, 0, 2, 0)
         lblDescargaCP2.Name = "lblDescargaCP2"
-        lblDescargaCP2.Size = New Size(158, 38)
+        lblDescargaCP2.Size = New Size(106, 26)
         lblDescargaCP2.TabIndex = 28
         lblDescargaCP2.Text = "99999"
         lblDescargaCP2.TextAlign = ContentAlignment.MiddleCenter
@@ -564,9 +570,10 @@ Partial Class MainForm
         Label10.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label10.BorderStyle = BorderStyle.FixedSingle
         Label10.Font = New Font("Segoe UI", 11.25F, FontStyle.Bold, GraphicsUnit.Point)
-        Label10.Location = New Point(4, 372)
+        Label10.Location = New Point(3, 248)
+        Label10.Margin = New Padding(2, 0, 2, 0)
         Label10.Name = "Label10"
-        Label10.Size = New Size(192, 38)
+        Label10.Size = New Size(129, 26)
         Label10.TabIndex = 27
         Label10.Text = "Descarga CP2"
         Label10.TextAlign = ContentAlignment.MiddleCenter
@@ -577,9 +584,10 @@ Partial Class MainForm
         lblSuccaoCP2.BorderStyle = BorderStyle.FixedSingle
         lblSuccaoCP2.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
         lblSuccaoCP2.ForeColor = Color.Cyan
-        lblSuccaoCP2.Location = New Point(201, 332)
+        lblSuccaoCP2.Location = New Point(134, 221)
+        lblSuccaoCP2.Margin = New Padding(2, 0, 2, 0)
         lblSuccaoCP2.Name = "lblSuccaoCP2"
-        lblSuccaoCP2.Size = New Size(158, 38)
+        lblSuccaoCP2.Size = New Size(106, 26)
         lblSuccaoCP2.TabIndex = 26
         lblSuccaoCP2.Text = "99999"
         lblSuccaoCP2.TextAlign = ContentAlignment.MiddleCenter
@@ -589,9 +597,10 @@ Partial Class MainForm
         Label12.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label12.BorderStyle = BorderStyle.FixedSingle
         Label12.Font = New Font("Segoe UI", 11.25F, FontStyle.Bold, GraphicsUnit.Point)
-        Label12.Location = New Point(4, 332)
+        Label12.Location = New Point(3, 221)
+        Label12.Margin = New Padding(2, 0, 2, 0)
         Label12.Name = "Label12"
-        Label12.Size = New Size(192, 38)
+        Label12.Size = New Size(129, 26)
         Label12.TabIndex = 25
         Label12.Text = "Sucção CP2"
         Label12.TextAlign = ContentAlignment.MiddleCenter
@@ -602,9 +611,10 @@ Partial Class MainForm
         lblDescargaCP1.BorderStyle = BorderStyle.FixedSingle
         lblDescargaCP1.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
         lblDescargaCP1.ForeColor = Color.Cyan
-        lblDescargaCP1.Location = New Point(201, 264)
+        lblDescargaCP1.Location = New Point(134, 176)
+        lblDescargaCP1.Margin = New Padding(2, 0, 2, 0)
         lblDescargaCP1.Name = "lblDescargaCP1"
-        lblDescargaCP1.Size = New Size(158, 38)
+        lblDescargaCP1.Size = New Size(106, 26)
         lblDescargaCP1.TabIndex = 24
         lblDescargaCP1.Text = "99999"
         lblDescargaCP1.TextAlign = ContentAlignment.MiddleCenter
@@ -614,9 +624,10 @@ Partial Class MainForm
         Label9.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label9.BorderStyle = BorderStyle.FixedSingle
         Label9.Font = New Font("Segoe UI", 11.25F, FontStyle.Bold, GraphicsUnit.Point)
-        Label9.Location = New Point(4, 264)
+        Label9.Location = New Point(3, 176)
+        Label9.Margin = New Padding(2, 0, 2, 0)
         Label9.Name = "Label9"
-        Label9.Size = New Size(192, 38)
+        Label9.Size = New Size(129, 26)
         Label9.TabIndex = 23
         Label9.Text = "Descarga CP1"
         Label9.TextAlign = ContentAlignment.MiddleCenter
@@ -627,9 +638,10 @@ Partial Class MainForm
         lblSuccaoCP1.BorderStyle = BorderStyle.FixedSingle
         lblSuccaoCP1.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
         lblSuccaoCP1.ForeColor = Color.Cyan
-        lblSuccaoCP1.Location = New Point(201, 224)
+        lblSuccaoCP1.Location = New Point(134, 149)
+        lblSuccaoCP1.Margin = New Padding(2, 0, 2, 0)
         lblSuccaoCP1.Name = "lblSuccaoCP1"
-        lblSuccaoCP1.Size = New Size(158, 38)
+        lblSuccaoCP1.Size = New Size(106, 26)
         lblSuccaoCP1.TabIndex = 22
         lblSuccaoCP1.Text = "99999"
         lblSuccaoCP1.TextAlign = ContentAlignment.MiddleCenter
@@ -639,9 +651,10 @@ Partial Class MainForm
         Label8.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label8.BorderStyle = BorderStyle.FixedSingle
         Label8.Font = New Font("Segoe UI", 11.25F, FontStyle.Bold, GraphicsUnit.Point)
-        Label8.Location = New Point(4, 224)
+        Label8.Location = New Point(3, 149)
+        Label8.Margin = New Padding(2, 0, 2, 0)
         Label8.Name = "Label8"
-        Label8.Size = New Size(192, 38)
+        Label8.Size = New Size(129, 26)
         Label8.TabIndex = 21
         Label8.Text = "Sucção CP1"
         Label8.TextAlign = ContentAlignment.MiddleCenter
@@ -650,8 +663,7 @@ Partial Class MainForm
         ' 
         imgLedInjecaoSeparadorON.ErrorImage = Nothing
         imgLedInjecaoSeparadorON.Image = CType(resources.GetObject("imgLedInjecaoSeparadorON.Image"), Image)
-        imgLedInjecaoSeparadorON.Location = New Point(206, 162)
-        imgLedInjecaoSeparadorON.Margin = New Padding(4)
+        imgLedInjecaoSeparadorON.Location = New Point(137, 108)
         imgLedInjecaoSeparadorON.Name = "imgLedInjecaoSeparadorON"
         imgLedInjecaoSeparadorON.Size = New Size(18, 18)
         imgLedInjecaoSeparadorON.SizeMode = PictureBoxSizeMode.AutoSize
@@ -662,8 +674,7 @@ Partial Class MainForm
         ' imgLedInjecaoSeparadorOFF
         ' 
         imgLedInjecaoSeparadorOFF.Image = My.Resources.Resources.ledCinza
-        imgLedInjecaoSeparadorOFF.Location = New Point(206, 162)
-        imgLedInjecaoSeparadorOFF.Margin = New Padding(4)
+        imgLedInjecaoSeparadorOFF.Location = New Point(137, 108)
         imgLedInjecaoSeparadorOFF.Name = "imgLedInjecaoSeparadorOFF"
         imgLedInjecaoSeparadorOFF.Size = New Size(18, 18)
         imgLedInjecaoSeparadorOFF.SizeMode = PictureBoxSizeMode.AutoSize
@@ -677,9 +688,10 @@ Partial Class MainForm
         lblTeste2.BorderStyle = BorderStyle.FixedSingle
         lblTeste2.Font = New Font("Segoe UI", 11F, FontStyle.Bold, GraphicsUnit.Point)
         lblTeste2.ForeColor = Color.Cyan
-        lblTeste2.Location = New Point(201, 156)
+        lblTeste2.Location = New Point(134, 104)
+        lblTeste2.Margin = New Padding(2, 0, 2, 0)
         lblTeste2.Name = "lblTeste2"
-        lblTeste2.Size = New Size(158, 38)
+        lblTeste2.Size = New Size(106, 26)
         lblTeste2.TabIndex = 18
         lblTeste2.Text = "99999"
         lblTeste2.TextAlign = ContentAlignment.MiddleRight
@@ -689,9 +701,10 @@ Partial Class MainForm
         Label7.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label7.BorderStyle = BorderStyle.FixedSingle
         Label7.Font = New Font("Segoe UI", 11.25F, FontStyle.Bold, GraphicsUnit.Point)
-        Label7.Location = New Point(4, 156)
+        Label7.Location = New Point(3, 104)
+        Label7.Margin = New Padding(2, 0, 2, 0)
         Label7.Name = "Label7"
-        Label7.Size = New Size(192, 38)
+        Label7.Size = New Size(129, 26)
         Label7.TabIndex = 17
         Label7.Text = "Abertura ICAD"
         Label7.TextAlign = ContentAlignment.MiddleCenter
@@ -702,9 +715,10 @@ Partial Class MainForm
         lblTeste3.BorderStyle = BorderStyle.FixedSingle
         lblTeste3.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
         lblTeste3.ForeColor = Color.Cyan
-        lblTeste3.Location = New Point(201, 116)
+        lblTeste3.Location = New Point(134, 77)
+        lblTeste3.Margin = New Padding(2, 0, 2, 0)
         lblTeste3.Name = "lblTeste3"
-        lblTeste3.Size = New Size(158, 38)
+        lblTeste3.Size = New Size(106, 26)
         lblTeste3.TabIndex = 16
         lblTeste3.Text = "99999"
         lblTeste3.TextAlign = ContentAlignment.MiddleCenter
@@ -714,9 +728,10 @@ Partial Class MainForm
         Label3.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label3.BorderStyle = BorderStyle.FixedSingle
         Label3.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point)
-        Label3.Location = New Point(4, 116)
+        Label3.Location = New Point(3, 77)
+        Label3.Margin = New Padding(2, 0, 2, 0)
         Label3.Name = "Label3"
-        Label3.Size = New Size(192, 38)
+        Label3.Size = New Size(129, 26)
         Label3.TabIndex = 15
         Label3.Text = "Pressão Bomba NH3"
         Label3.TextAlign = ContentAlignment.MiddleCenter
@@ -727,9 +742,10 @@ Partial Class MainForm
         lblTeste1.BorderStyle = BorderStyle.FixedSingle
         lblTeste1.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
         lblTeste1.ForeColor = Color.Cyan
-        lblTeste1.Location = New Point(201, 75)
+        lblTeste1.Location = New Point(134, 50)
+        lblTeste1.Margin = New Padding(2, 0, 2, 0)
         lblTeste1.Name = "lblTeste1"
-        lblTeste1.Size = New Size(158, 38)
+        lblTeste1.Size = New Size(106, 26)
         lblTeste1.TabIndex = 14
         lblTeste1.Text = "99999"
         lblTeste1.TextAlign = ContentAlignment.MiddleCenter
@@ -739,9 +755,10 @@ Partial Class MainForm
         Label6.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
         Label6.BorderStyle = BorderStyle.FixedSingle
         Label6.Font = New Font("Segoe UI", 11.25F, FontStyle.Bold, GraphicsUnit.Point)
-        Label6.Location = New Point(4, 75)
+        Label6.Location = New Point(3, 50)
+        Label6.Margin = New Padding(2, 0, 2, 0)
         Label6.Name = "Label6"
-        Label6.Size = New Size(192, 38)
+        Label6.Size = New Size(129, 26)
         Label6.TabIndex = 7
         Label6.Text = "Nível Separador"
         Label6.TextAlign = ContentAlignment.MiddleCenter
@@ -752,9 +769,10 @@ Partial Class MainForm
         Label5.BorderStyle = BorderStyle.FixedSingle
         Label5.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point)
         Label5.ForeColor = SystemColors.ControlLightLight
-        Label5.Location = New Point(201, 46)
+        Label5.Location = New Point(134, 31)
+        Label5.Margin = New Padding(2, 0, 2, 0)
         Label5.Name = "Label5"
-        Label5.Size = New Size(158, 26)
+        Label5.Size = New Size(106, 18)
         Label5.TabIndex = 6
         Label5.Text = "Status"
         Label5.TextAlign = ContentAlignment.MiddleCenter
@@ -765,9 +783,10 @@ Partial Class MainForm
         Label4.BorderStyle = BorderStyle.FixedSingle
         Label4.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point)
         Label4.ForeColor = SystemColors.ControlLightLight
-        Label4.Location = New Point(4, 46)
+        Label4.Location = New Point(3, 31)
+        Label4.Margin = New Padding(2, 0, 2, 0)
         Label4.Name = "Label4"
-        Label4.Size = New Size(192, 26)
+        Label4.Size = New Size(129, 18)
         Label4.TabIndex = 5
         Label4.Text = "Descrição"
         Label4.TextAlign = ContentAlignment.MiddleCenter
@@ -777,9 +796,10 @@ Partial Class MainForm
         lblNomeAmbiente.BackColor = Color.FromArgb(CByte(234), CByte(193), CByte(55))
         lblNomeAmbiente.BorderStyle = BorderStyle.FixedSingle
         lblNomeAmbiente.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
-        lblNomeAmbiente.Location = New Point(4, 6)
+        lblNomeAmbiente.Location = New Point(3, 4)
+        lblNomeAmbiente.Margin = New Padding(2, 0, 2, 0)
         lblNomeAmbiente.Name = "lblNomeAmbiente"
-        lblNomeAmbiente.Size = New Size(354, 38)
+        lblNomeAmbiente.Size = New Size(237, 26)
         lblNomeAmbiente.TabIndex = 4
         lblNomeAmbiente.Text = "Sala de Máquinas"
         lblNomeAmbiente.TextAlign = ContentAlignment.MiddleCenter
@@ -794,11 +814,11 @@ Partial Class MainForm
         ' 
         ' MainForm
         ' 
-        AutoScaleDimensions = New SizeF(144F, 144F)
+        AutoScaleDimensions = New SizeF(96F, 96F)
         AutoScaleMode = AutoScaleMode.Dpi
         AutoSize = True
         BackColor = Color.LightGray
-        ClientSize = New Size(1959, 1122)
+        ClientSize = New Size(1283, 707)
         Controls.Add(PainelSadema)
         Controls.Add(StatusStrip1)
         Controls.Add(lblResult)
@@ -808,7 +828,6 @@ Partial Class MainForm
         Icon = CType(resources.GetObject("$this.Icon"), Icon)
         IsMdiContainer = True
         MainMenuStrip = MenuPrincipal
-        Margin = New Padding(4)
         Name = "MainForm"
         Text = "SisMaster - Sistema de Supervisão Remoto"
         WindowState = FormWindowState.Maximized

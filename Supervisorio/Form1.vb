@@ -31,6 +31,15 @@ Public Class MainForm
 
     Public blcGeral(3000), blcGeral2(500), blcGeral3(600) As Integer
     Public varContadorCommOK, varContadorCommFault, varAlarmes1, varAlarmes2, varAlarmes3, varAlarmes4 As Int32
+    Public commOK_Sadema, commFault_Sadema As Int32
+    Public commOK_Comp1, commFault_Comp1 As Int32
+    Public commOK_Comp2, commFault_Comp2 As Int32
+    Public commOK_Comp3, commFault_Comp3 As Int32
+    Public commOK_CLP2, commFault_CLP2 As Int32
+    Public commOK_M251, commFault_M251 As Int32
+
+    Private Shared ReadOnly CorConectado As Color = Color.FromArgb(0, 110, 0)
+    Private Shared ReadOnly CorDesconectado As Color = Color.FromArgb(180, 0, 0)
 
     Public Ambientes(50) As STRCamaras
     Public Compressores(3) As STRCompressores
@@ -43,26 +52,59 @@ Public Class MainForm
     Private _aquisicao    As AquisicaoService
     Private _frmRelatorio As FrmRelatorios
 
-    Private Sub TimerCLP_Tick(sender As Object, e As EventArgs) Handles TimerCLP.Tick
-        Dim readVals(100), i, j As Int16
-        Dim slave, startRdReg, numRdRegs, varST As Int16
-        Dim res As Int32
-        Dim varTempoDecorrido As Int32 'auxiliar para calculos de variaveis do CLP tipo Time e TOD
+    Private Async Sub TimerCLP_Tick(sender As Object, e As EventArgs) Handles TimerCLP.Tick
+        TimerCLP.Stop()
 
-        If Not myProtocol.isOpen() Then
-            If Not ConectarCLPSadema() Then
-                Exit Sub
-            End If
-        Else
-            varContadorCommOK += 1
-            BarraStatusLabel2.Text = "Contadores: " & varContadorCommOK & " OK - " & varContadorCommFault & " Fault"
+        Dim readVals(100) As Int16
+        Dim readVals2(100) As Int16
+        Dim i, j As Int16
+        Dim startRdReg As Int16 = 2407
+        Dim startRdReg2 As Int16 = 0
+        Dim res1 As Int32 = -1
+        Dim res2 As Int32 = -1
+        Dim varST As Int16
+        Dim varTempoDecorrido As Int32
+        Dim isOpen As Boolean = False
+        Dim lerAmbiente As Boolean = (varAmbienteAtivo <> 0 AndAlso Ambientes(varAmbienteAtivo).varCLP = 1)
+
+        If lerAmbiente Then
+            startRdReg2 = Ambientes(varAmbienteAtivo).varStartAdress
         End If
 
-        slave = 1
-        startRdReg = 2407
-        numRdRegs = 75
-        res = myProtocol.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
+        Await Task.Run(
+            Sub()
+                Try
+                    isOpen = myProtocol.isOpen()
+                    If Not isOpen Then
+                        Dim conexaoSucedida As Boolean = False
+                        Me.Invoke(Sub() conexaoSucedida = ConectarCLPSadema())
+                        isOpen = conexaoSucedida
+                    End If
+
+                    If isOpen Then
+                        res1 = myProtocol.readMultipleRegisters(1, 2407, readVals, 75)
+                        If res1 <> BusProtocolErrors.FTALK_SUCCESS Then
+                            myProtocol.closeProtocol()
+                            LogService.GravarErro("COMUNICACAO", "Falha de leitura no CLP Sadema (Reg 2407): Erro " & res1)
+                        Else
+                            If lerAmbiente Then
+                                res2 = myProtocol.readMultipleRegisters(1, startRdReg2, readVals2, 71)
+                                If res2 <> BusProtocolErrors.FTALK_SUCCESS Then
+                                    myProtocol.closeProtocol()
+                                    LogService.GravarErro("COMUNICACAO", "Falha de leitura no CLP Sadema (Reg " & startRdReg2 & "): Erro " & res2)
+                                End If
+                            End If
+                        End If
+                    End If
+                Catch ex As Exception
+                    LogService.GravarErro("SISTEMA", "Erro na thread de leitura do CLP Sadema: " & ex.Message)
+                End Try
+            End Sub)
+
+        If res1 = BusProtocolErrors.FTALK_SUCCESS Then
+            IncrementarContador(commOK_Sadema)
+            ToolStripStatusLabel1.Text = "S71200: ON (" & commOK_Sadema & "/" & commFault_Sadema & ")"
+            ToolStripStatusLabel1.ForeColor = CorConectado
             For i = 1 To 100
                 blcGeral(startRdReg - 1 + i) = readVals(i)
             Next
@@ -365,18 +407,16 @@ Public Class MainForm
                 imgLedInjecaoSeparadorON.Visible = False
                 imgLedInjecaoSeparadorOFF.Visible = True
             End If
+        Else
+            IncrementarContador(commFault_Sadema)
+            ToolStripStatusLabel1.Text = "S71200: OFF (" & commOK_Sadema & "/" & commFault_Sadema & ")"
+            ToolStripStatusLabel1.ForeColor = CorDesconectado
         End If
 
-        If varAmbienteAtivo <> 0 And Ambientes(varAmbienteAtivo).varCLP = 1 Then
-            slave = 1
-            startRdReg = Ambientes(varAmbienteAtivo).varStartAdress
-            numRdRegs = 71
-            res = myProtocol.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-            If res = BusProtocolErrors.FTALK_SUCCESS Then
-                For j = 1 To numRdRegs
-                    blcGeral(startRdReg - 1 + j) = readVals(j)
-                Next
-            End If
+        If lerAmbiente AndAlso res2 = BusProtocolErrors.FTALK_SUCCESS Then
+            For j = 1 To 71
+                blcGeral(startRdReg2 - 1 + j) = readVals2(j)
+            Next
 
             'carrega os valores dos tempos decorridos de degelo indexadinho em Segundos
             varST = Ambientes(varAmbienteAtivo).varStartAdress
@@ -441,11 +481,37 @@ Public Class MainForm
             Ambientes(varAmbienteAtivo).varMinutoDegelo3 = (varTempoDecorrido \ 60) Mod 60
 
         End If
+        TimerCLP.Start()
     End Sub
 
     Private Sub MainForm_Shown(sender As Object, e As EventArgs) Handles Me.Shown
         varContadorCommFault = 0
         varContadorCommOK = 0
+        commOK_Sadema = 0
+        commFault_Sadema = 0
+        commOK_Comp1 = 0
+        commFault_Comp1 = 0
+        commOK_Comp2 = 0
+        commFault_Comp2 = 0
+        commOK_Comp3 = 0
+        commFault_Comp3 = 0
+        commOK_CLP2 = 0
+        commFault_CLP2 = 0
+        commOK_M251 = 0
+        commFault_M251 = 0
+        BarraStatusLabel2.DoubleClickEnabled = True
+        BarraStatusLabel2.Text = "[Reset Contadores]"
+        BarraStatusLabel2.BackColor = Color.Transparent
+
+        ' Estilizacao do rodape (labels transparentes, largura fixa e alinhamento a esquerda)
+        Dim labelsStatus() As ToolStripStatusLabel = {ToolStripStatusLabel1, BarraStatusLabel3, BarraStatusLabel4, BarraStatusLabel5, BarraStatusLabel6, BarraStatusM251}
+        For Each lbl In labelsStatus
+            lbl.AutoSize = False
+            lbl.Size = New Size(180, 17)
+            lbl.TextAlign = ContentAlignment.MiddleLeft
+            lbl.BackColor = Color.Transparent
+        Next
+
         TimerCLP.Enabled = True
         Timer_CLP2.Enabled = True
         Timer_M251.Enabled = True
@@ -865,139 +931,299 @@ Public Class MainForm
         MenuPrincipal.Focus()
     End Sub
 
-    Private Sub TimerCompressor1_Tick(sender As Object, e As EventArgs) Handles TimerCompressor1.Tick
-        Dim readVals(100) As Int16
-        Dim slave, startRdReg, numRdRegs As Int16
-        Dim res As Int32
+    Private Async Sub TimerCompressor1_Tick(sender As Object, e As EventArgs) Handles TimerCompressor1.Tick
+        TimerCompressor1.Stop()
 
-        If Not MBComp1.isOpen() Then
-            If Not ConectarMBComp1() Then
-                Exit Sub
-            End If
+        Dim readVals1(100) As Int16
+        Dim readVals2(100) As Int16
+        Dim res1 As Int32 = -1
+        Dim res2 As Int32 = -1
+        Dim isOpen As Boolean = False
+
+        Await Task.Run(
+            Sub()
+                Try
+                    isOpen = MBComp1.isOpen()
+                    If Not isOpen Then
+                        Dim conexaoSucedida As Boolean = False
+                        Me.Invoke(Sub() conexaoSucedida = ConectarMBComp1())
+                        isOpen = conexaoSucedida
+                    End If
+
+                    If isOpen Then
+                        res1 = MBComp1.readMultipleRegisters(1, 3018, readVals1, 30)
+                        If res1 <> BusProtocolErrors.FTALK_SUCCESS Then
+                            MBComp1.closeProtocol()
+                            LogService.GravarErro("COMUNICACAO", "Falha de leitura no Compressor 1 (Reg 3018): Erro " & res1)
+                        Else
+                            res2 = MBComp1.readMultipleRegisters(1, 3262, readVals2, 4)
+                            If res2 <> BusProtocolErrors.FTALK_SUCCESS Then
+                                MBComp1.closeProtocol()
+                                LogService.GravarErro("COMUNICACAO", "Falha de leitura no Compressor 1 (Reg 3262): Erro " & res2)
+                            End If
+                        End If
+                    End If
+                Catch ex As Exception
+                    LogService.GravarErro("SISTEMA", "Erro na thread de leitura do Compressor 1: " & ex.Message)
+                End Try
+            End Sub)
+
+        If res1 = BusProtocolErrors.FTALK_SUCCESS Then
+            IncrementarContador(commOK_Comp1)
+            BarraStatusLabel3.Text = "CP1: ON (" & commOK_Comp1 & "/" & commFault_Comp1 & ")"
+            BarraStatusLabel3.ForeColor = CorConectado
+            Compressores(1).varPressaoSuccao = readVals1(1)
+            Compressores(1).varPressaoDescarga = readVals1(2)
+            Compressores(1).varPressaoOleo = readVals1(3)
+            Compressores(1).varPressaoFiltroOleo = readVals1(4)
+            Compressores(1).varTemperaturaSuccao = readVals1(5)
+            Compressores(1).varTemperaturaDescarga = readVals1(6)
+            Compressores(1).varTemperaturaOleo = readVals1(7)
+            Compressores(1).varTemperaturaSeparador = readVals1(8)
+            Compressores(1).varPressaoIntermediario = readVals1(9)
+            Compressores(1).varTemperaturaIntermediario = readVals1(10)
+            Compressores(1).varCorrenteEletrica = readVals1(12)
+        Else
+            Compressores(1).varPressaoSuccao = 0
+            Compressores(1).varPressaoDescarga = 0
+            Compressores(1).varPressaoOleo = 0
+            Compressores(1).varPressaoFiltroOleo = 0
+            Compressores(1).varTemperaturaSuccao = 0
+            Compressores(1).varTemperaturaDescarga = 0
+            Compressores(1).varTemperaturaOleo = 0
+            Compressores(1).varTemperaturaSeparador = 0
+            Compressores(1).varPressaoIntermediario = 0
+            Compressores(1).varTemperaturaIntermediario = 0
+            Compressores(1).varCorrenteEletrica = 0
+            IncrementarContador(commFault_Comp1)
+            BarraStatusLabel3.Text = "CP1: OFF (" & commOK_Comp1 & "/" & commFault_Comp1 & ")"
+            BarraStatusLabel3.ForeColor = CorDesconectado
         End If
 
-        slave = 1
-        startRdReg = 3018
-        numRdRegs = 30
-        res = MBComp1.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
-            Compressores(1).varPressaoSuccao = readVals(1)
-            Compressores(1).varPressaoDescarga = readVals(2)
-            Compressores(1).varPressaoOleo = readVals(3)
-            Compressores(1).varPressaoFiltroOleo = readVals(4)
-            Compressores(1).varTemperaturaSuccao = readVals(5)
-            Compressores(1).varTemperaturaDescarga = readVals(6)
-            Compressores(1).varTemperaturaOleo = readVals(7)
-            Compressores(1).varTemperaturaSeparador = readVals(8)
-            Compressores(1).varPressaoIntermediario = readVals(9)
-            Compressores(1).varTemperaturaIntermediario = readVals(10)
-            Compressores(1).varCorrenteEletrica = readVals(12)
+        If res2 = BusProtocolErrors.FTALK_SUCCESS Then
+            Compressores(1).varStatus = readVals2(1)
+            Compressores(1).varRotacao = readVals2(3)
+        ElseIf isOpen Then
+            Compressores(1).varStatus = 0
+            Compressores(1).varRotacao = 0
         End If
 
-        slave = 1
-        startRdReg = 3262
-        numRdRegs = 4
-        res = MBComp1.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
-            Compressores(1).varStatus = readVals(1)
-            Compressores(1).varRotacao = readVals(3)
-        End If
+        TimerCompressor1.Start()
     End Sub
 
-    Private Sub TimerCompressor2_Tick(sender As Object, e As EventArgs) Handles TimerCompressor2.Tick
-        Dim readVals(100) As Int16
-        Dim slave, startRdReg, numRdRegs As Int16
-        Dim res As Int32
+    Private Async Sub TimerCompressor2_Tick(sender As Object, e As EventArgs) Handles TimerCompressor2.Tick
+        TimerCompressor2.Stop()
 
-        If Not MBComp2.isOpen() Then
-            If Not ConectarMBComp2() Then
-                Exit Sub
-            End If
+        Dim readVals1(100) As Int16
+        Dim readVals2(100) As Int16
+        Dim res1 As Int32 = -1
+        Dim res2 As Int32 = -1
+        Dim isOpen As Boolean = False
+
+        Await Task.Run(
+            Sub()
+                Try
+                    isOpen = MBComp2.isOpen()
+                    If Not isOpen Then
+                        Dim conexaoSucedida As Boolean = False
+                        Me.Invoke(Sub() conexaoSucedida = ConectarMBComp2())
+                        isOpen = conexaoSucedida
+                    End If
+
+                    If isOpen Then
+                        res1 = MBComp2.readMultipleRegisters(1, 3018, readVals1, 30)
+                        If res1 <> BusProtocolErrors.FTALK_SUCCESS Then
+                            MBComp2.closeProtocol()
+                            LogService.GravarErro("COMUNICACAO", "Falha de leitura no Compressor 2 (Reg 3018): Erro " & res1)
+                        Else
+                            res2 = MBComp2.readMultipleRegisters(1, 3262, readVals2, 4)
+                            If res2 <> BusProtocolErrors.FTALK_SUCCESS Then
+                                MBComp2.closeProtocol()
+                                LogService.GravarErro("COMUNICACAO", "Falha de leitura no Compressor 2 (Reg 3262): Erro " & res2)
+                            End If
+                        End If
+                    End If
+                Catch ex As Exception
+                    LogService.GravarErro("SISTEMA", "Erro na thread de leitura do Compressor 2: " & ex.Message)
+                End Try
+            End Sub)
+
+        If res1 = BusProtocolErrors.FTALK_SUCCESS Then
+            IncrementarContador(commOK_Comp2)
+            BarraStatusLabel4.Text = "CP2: ON (" & commOK_Comp2 & "/" & commFault_Comp2 & ")"
+            BarraStatusLabel4.ForeColor = CorConectado
+            Compressores(2).varPressaoSuccao = readVals1(1)
+            Compressores(2).varPressaoDescarga = readVals1(2)
+            Compressores(2).varPressaoOleo = readVals1(3)
+            Compressores(2).varPressaoFiltroOleo = readVals1(4)
+            Compressores(2).varTemperaturaSuccao = readVals1(5)
+            Compressores(2).varTemperaturaDescarga = readVals1(6)
+            Compressores(2).varTemperaturaOleo = readVals1(7)
+            Compressores(2).varTemperaturaSeparador = readVals1(8)
+            Compressores(2).varPressaoIntermediario = readVals1(9)
+            Compressores(2).varTemperaturaIntermediario = readVals1(10)
+            Compressores(2).varCorrenteEletrica = readVals1(12)
+        Else
+            Compressores(2).varPressaoSuccao = 0
+            Compressores(2).varPressaoDescarga = 0
+            Compressores(2).varPressaoOleo = 0
+            Compressores(2).varPressaoFiltroOleo = 0
+            Compressores(2).varTemperaturaSuccao = 0
+            Compressores(2).varTemperaturaDescarga = 0
+            Compressores(2).varTemperaturaOleo = 0
+            Compressores(2).varTemperaturaSeparador = 0
+            Compressores(2).varPressaoIntermediario = 0
+            Compressores(2).varTemperaturaIntermediario = 0
+            Compressores(2).varCorrenteEletrica = 0
+            IncrementarContador(commFault_Comp2)
+            BarraStatusLabel4.Text = "CP2: OFF (" & commOK_Comp2 & "/" & commFault_Comp2 & ")"
+            BarraStatusLabel4.ForeColor = CorDesconectado
         End If
 
-        slave = 1
-        startRdReg = 3018
-        numRdRegs = 30
-        res = MBComp2.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
-            Compressores(2).varPressaoSuccao = readVals(1)
-            Compressores(2).varPressaoDescarga = readVals(2)
-            Compressores(2).varPressaoOleo = readVals(3)
-            Compressores(2).varPressaoFiltroOleo = readVals(4)
-            Compressores(2).varTemperaturaSuccao = readVals(5)
-            Compressores(2).varTemperaturaDescarga = readVals(6)
-            Compressores(2).varTemperaturaOleo = readVals(7)
-            Compressores(2).varTemperaturaSeparador = readVals(8)
-            Compressores(2).varPressaoIntermediario = readVals(9)
-            Compressores(2).varTemperaturaIntermediario = readVals(10)
-            Compressores(2).varCorrenteEletrica = readVals(12)
+        If res2 = BusProtocolErrors.FTALK_SUCCESS Then
+            Compressores(2).varStatus = readVals2(1)
+            Compressores(2).varRotacao = readVals2(3)
+        ElseIf isOpen Then
+            Compressores(2).varStatus = 0
+            Compressores(2).varRotacao = 0
         End If
 
-        slave = 1
-        startRdReg = 3262
-        numRdRegs = 4
-        res = MBComp2.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
-            Compressores(2).varStatus = readVals(1)
-            Compressores(2).varRotacao = readVals(3)
-        End If
+        TimerCompressor2.Start()
     End Sub
 
-    Private Sub TimerCompressor3_Tick(sender As Object, e As EventArgs) Handles TimerCompressor3.Tick
-        Dim readVals(100) As Int16
-        Dim slave, startRdReg, numRdRegs As Int16
-        Dim res As Int32
+    Private Async Sub TimerCompressor3_Tick(sender As Object, e As EventArgs) Handles TimerCompressor3.Tick
+        TimerCompressor3.Stop()
 
-        If Not MBComp3.isOpen() Then
-            If Not ConectarMBComp3() Then
-                Exit Sub
-            End If
+        Dim readVals1(100) As Int16
+        Dim readVals2(100) As Int16
+        Dim res1 As Int32 = -1
+        Dim res2 As Int32 = -1
+        Dim isOpen As Boolean = False
+
+        Await Task.Run(
+            Sub()
+                Try
+                    isOpen = MBComp3.isOpen()
+                    If Not isOpen Then
+                        Dim conexaoSucedida As Boolean = False
+                        Me.Invoke(Sub() conexaoSucedida = ConectarMBComp3())
+                        isOpen = conexaoSucedida
+                    End If
+
+                    If isOpen Then
+                        res1 = MBComp3.readMultipleRegisters(1, 3018, readVals1, 30)
+                        If res1 <> BusProtocolErrors.FTALK_SUCCESS Then
+                            MBComp3.closeProtocol()
+                            LogService.GravarErro("COMUNICACAO", "Falha de leitura no Compressor 3 (Reg 3018): Erro " & res1)
+                        Else
+                            res2 = MBComp3.readMultipleRegisters(1, 3262, readVals2, 4)
+                            If res2 <> BusProtocolErrors.FTALK_SUCCESS Then
+                                MBComp3.closeProtocol()
+                                LogService.GravarErro("COMUNICACAO", "Falha de leitura no Compressor 3 (Reg 3262): Erro " & res2)
+                            End If
+                        End If
+                    End If
+                Catch ex As Exception
+                    LogService.GravarErro("SISTEMA", "Erro na thread de leitura do Compressor 3: " & ex.Message)
+                End Try
+            End Sub)
+
+        If res1 = BusProtocolErrors.FTALK_SUCCESS Then
+            IncrementarContador(commOK_Comp3)
+            BarraStatusLabel5.Text = "CP3: ON (" & commOK_Comp3 & "/" & commFault_Comp3 & ")"
+            BarraStatusLabel5.ForeColor = CorConectado
+            Compressores(3).varPressaoSuccao = readVals1(1)
+            Compressores(3).varPressaoDescarga = readVals1(2)
+            Compressores(3).varPressaoOleo = readVals1(3)
+            Compressores(3).varPressaoFiltroOleo = readVals1(4)
+            Compressores(3).varTemperaturaSuccao = readVals1(5)
+            Compressores(3).varTemperaturaDescarga = readVals1(6)
+            Compressores(3).varTemperaturaOleo = readVals1(7)
+            Compressores(3).varTemperaturaSeparador = readVals1(8)
+            Compressores(3).varPressaoIntermediario = readVals1(9)
+            Compressores(3).varTemperaturaIntermediario = readVals1(10)
+            Compressores(3).varCorrenteEletrica = readVals1(12)
+        Else
+            Compressores(3).varPressaoSuccao = 0
+            Compressores(3).varPressaoDescarga = 0
+            Compressores(3).varPressaoOleo = 0
+            Compressores(3).varPressaoFiltroOleo = 0
+            Compressores(3).varTemperaturaSuccao = 0
+            Compressores(3).varTemperaturaDescarga = 0
+            Compressores(3).varTemperaturaOleo = 0
+            Compressores(3).varTemperaturaSeparador = 0
+            Compressores(3).varPressaoIntermediario = 0
+            Compressores(3).varTemperaturaIntermediario = 0
+            Compressores(3).varCorrenteEletrica = 0
+            IncrementarContador(commFault_Comp3)
+            BarraStatusLabel5.Text = "CP3: OFF (" & commOK_Comp3 & "/" & commFault_Comp3 & ")"
+            BarraStatusLabel5.ForeColor = CorDesconectado
         End If
 
-        slave = 1
-        startRdReg = 3018
-        numRdRegs = 30
-        res = MBComp3.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
-            Compressores(3).varPressaoSuccao = readVals(1)
-            Compressores(3).varPressaoDescarga = readVals(2)
-            Compressores(3).varPressaoOleo = readVals(3)
-            Compressores(3).varPressaoFiltroOleo = readVals(4)
-            Compressores(3).varTemperaturaSuccao = readVals(5)
-            Compressores(3).varTemperaturaDescarga = readVals(6)
-            Compressores(3).varTemperaturaOleo = readVals(7)
-            Compressores(3).varTemperaturaSeparador = readVals(8)
-            Compressores(3).varPressaoIntermediario = readVals(9)
-            Compressores(3).varTemperaturaIntermediario = readVals(10)
-            Compressores(3).varCorrenteEletrica = readVals(12)
+        If res2 = BusProtocolErrors.FTALK_SUCCESS Then
+            Compressores(3).varStatus = readVals2(1)
+            Compressores(3).varRotacao = readVals2(3)
+        ElseIf isOpen Then
+            Compressores(3).varStatus = 0
+            Compressores(3).varRotacao = 0
         End If
 
-        slave = 1
-        startRdReg = 3262
-        numRdRegs = 4
-        res = MBComp3.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
-            Compressores(3).varStatus = readVals(1)
-            Compressores(3).varRotacao = readVals(3)
-        End If
+        TimerCompressor3.Start()
     End Sub
 
-    Private Sub Timer_CLP2_Tick(sender As Object, e As EventArgs) Handles Timer_CLP2.Tick
-        Dim readVals(150), i, j As Int16
-        Dim slave, startRdReg, numRdRegs, varST As Int16
-        Dim res As Int32
+    Private Async Sub Timer_CLP2_Tick(sender As Object, e As EventArgs) Handles Timer_CLP2.Tick
+        Timer_CLP2.Stop()
 
-        If Not CLP_2.isOpen() Then
-            If Not ConectarCLP2() Then
-                Exit Sub
-            End If
+        Dim readVals(150) As Int16
+        Dim readVals2(150) As Int16
+        Dim i, j As Int16
+        Dim startRdReg As Int16 = 120
+        Dim numRdRegs As Int16 = 120
+        Dim startRdReg2 As Int16 = 0
+        Dim res1 As Int32 = -1
+        Dim res2 As Int32 = -1
+        Dim varST As Int16
+        Dim isOpen As Boolean = False
+        Dim lerAmbiente As Boolean = (varAmbienteAtivo <> 0 AndAlso Ambientes(varAmbienteAtivo).varCLP = 2)
+
+        If lerAmbiente Then
+            startRdReg2 = Ambientes(varAmbienteAtivo).varStartAdress
         End If
 
-        slave = 1
-        startRdReg = 120
-        numRdRegs = 120
-        res = CLP_2.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
+        Await Task.Run(
+            Sub()
+                Try
+                    isOpen = CLP_2.isOpen()
+                    If Not isOpen Then
+                        Dim conexaoSucedida As Boolean = False
+                        Me.Invoke(Sub() conexaoSucedida = ConectarCLP2())
+                        isOpen = conexaoSucedida
+                    End If
+
+                    If isOpen Then
+                        res1 = CLP_2.readMultipleRegisters(1, 120, readVals, 120)
+                        If res1 <> BusProtocolErrors.FTALK_SUCCESS Then
+                            CLP_2.closeProtocol()
+                            LogService.GravarErro("COMUNICACAO", "Falha de leitura no CLP 2 (Reg 120): Erro " & res1)
+                        Else
+                            If lerAmbiente Then
+                                res2 = CLP_2.readMultipleRegisters(1, startRdReg2, readVals2, 19)
+                                If res2 <> BusProtocolErrors.FTALK_SUCCESS Then
+                                    CLP_2.closeProtocol()
+                                    LogService.GravarErro("COMUNICACAO", "Falha de leitura no CLP 2 (Reg " & startRdReg2 & "): Erro " & res2)
+                                End If
+                            End If
+                        End If
+                    End If
+                Catch ex As Exception
+                    LogService.GravarErro("SISTEMA", "Erro na thread de leitura do CLP 2: " & ex.Message)
+                End Try
+            End Sub)
+
+        If res1 = BusProtocolErrors.FTALK_SUCCESS Then
+            IncrementarContador(commOK_CLP2)
+            BarraStatusLabel6.Text = "M221: ON (" & commOK_CLP2 & "/" & commFault_CLP2 & ")"
+            BarraStatusLabel6.ForeColor = CorConectado
             For i = 1 To numRdRegs
                 blcGeral2(startRdReg - 1 + i) = readVals(i)
             Next
@@ -1200,18 +1426,16 @@ Public Class MainForm
             Ambientes(16).bitLDVSAG = DesfragmentaBit(Ambientes(16).varStatus, 13)
             'Ambientes(11).bitFalhaEvaporador1 = DesfragmentaBit(varAlarmes1, 0)
             'Ambientes(11).bitFalhaEvaporador2 = DesfragmentaBit(varAlarmes1, 1)
+        Else
+            IncrementarContador(commFault_CLP2)
+            BarraStatusLabel6.Text = "M221: OFF (" & commOK_CLP2 & "/" & commFault_CLP2 & ")"
+            BarraStatusLabel6.ForeColor = CorDesconectado
         End If
 
-        If varAmbienteAtivo <> 0 And Ambientes(varAmbienteAtivo).varCLP = 2 Then
-            slave = 1
-            startRdReg = Ambientes(varAmbienteAtivo).varStartAdress
-            numRdRegs = 19
-            res = CLP_2.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-            If res = BusProtocolErrors.FTALK_SUCCESS Then
-                For j = 1 To numRdRegs
-                    blcGeral2(startRdReg - 1 + j) = readVals(j)
-                Next
-            End If
+        If lerAmbiente AndAlso res2 = BusProtocolErrors.FTALK_SUCCESS Then
+            For j = 1 To 19
+                blcGeral2(startRdReg2 - 1 + j) = readVals2(j)
+            Next
 
             'bits de habilita degelo
             varST = Ambientes(varAmbienteAtivo).varADControle
@@ -1242,26 +1466,78 @@ Public Class MainForm
             Ambientes(varAmbienteAtivo).varHoraDegelo3 = blcGeral2(varST + 12) \ 100
             Ambientes(varAmbienteAtivo).varMinutoDegelo3 = blcGeral2(varST + 12) Mod 100
         End If
+        Timer_CLP2.Start()
     End Sub
 
-    Private Sub Timer_M251_Tick(sender As Object, e As EventArgs) Handles Timer_M251.Tick
-        Dim readVals(150), i, j As Int16
-        Dim slave, startRdReg, numRdRegs, varST As Int16
-        Dim res As Int32
+    Private Async Sub Timer_M251_Tick(sender As Object, e As EventArgs) Handles Timer_M251.Tick
+        Timer_M251.Stop()
 
-        If Not M251.isOpen() Then
-            If Not ConectarM251() Then
-                Exit Sub
-            End If
+        Dim readVals1(150) As Int16
+        Dim readVals2(150) As Int16
+        Dim readVals3(150) As Int16
+        Dim readVals4(150) As Int16
+        Dim i, j As Int16
+        Dim startRdReg2 As Int16 = 0
+        Dim res1 As Int32 = -1
+        Dim res2 As Int32 = -1
+        Dim res3 As Int32 = -1
+        Dim res4 As Int32 = -1
+        Dim varST As Int16
+        Dim isOpen As Boolean = False
+        Dim lerAmbiente As Boolean = (varAmbienteAtivo <> 0 AndAlso Ambientes(varAmbienteAtivo).varCLP = 3)
+
+        If lerAmbiente Then
+            startRdReg2 = Ambientes(varAmbienteAtivo).varStartAdress
         End If
 
-        slave = 1
-        startRdReg = 300
-        numRdRegs = 100
-        res = M251.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
-            For i = 1 To numRdRegs
-                blcGeral3(startRdReg - 1 + i) = readVals(i)
+        Await Task.Run(
+            Sub()
+                Try
+                    isOpen = M251.isOpen()
+                    If Not isOpen Then
+                        Dim conexaoSucedida As Boolean = False
+                        Me.Invoke(Sub() conexaoSucedida = ConectarM251())
+                        isOpen = conexaoSucedida
+                    End If
+
+                    If isOpen Then
+                        res1 = M251.readMultipleRegisters(1, 300, readVals1, 100)
+                        If res1 <> BusProtocolErrors.FTALK_SUCCESS Then
+                            M251.closeProtocol()
+                            LogService.GravarErro("COMUNICACAO", "Falha de leitura no CLP M251 (Reg 300): Erro " & res1)
+                        Else
+                            res2 = M251.readMultipleRegisters(1, 400, readVals2, 100)
+                            If res2 <> BusProtocolErrors.FTALK_SUCCESS Then
+                                M251.closeProtocol()
+                                LogService.GravarErro("COMUNICACAO", "Falha de leitura no CLP M251 (Reg 400): Erro " & res2)
+                            Else
+                                res3 = M251.readMultipleRegisters(1, 500, readVals3, 100)
+                                If res3 <> BusProtocolErrors.FTALK_SUCCESS Then
+                                    M251.closeProtocol()
+                                    LogService.GravarErro("COMUNICACAO", "Falha de leitura no CLP M251 (Reg 500): Erro " & res3)
+                                Else
+                                    If lerAmbiente Then
+                                        res4 = M251.readMultipleRegisters(1, startRdReg2, readVals4, 19)
+                                        If res4 <> BusProtocolErrors.FTALK_SUCCESS Then
+                                            M251.closeProtocol()
+                                            LogService.GravarErro("COMUNICACAO", "Falha de leitura no CLP M251 (Reg " & startRdReg2 & "): Erro " & res4)
+                                        End If
+                                    End If
+                                End If
+                            End If
+                        End If
+                    End If
+                Catch ex As Exception
+                    LogService.GravarErro("SISTEMA", "Erro na thread de leitura do CLP M251: " & ex.Message)
+                End Try
+            End Sub)
+
+        If res1 = BusProtocolErrors.FTALK_SUCCESS Then
+            IncrementarContador(commOK_M251)
+            BarraStatusM251.Text = "M251: ON (" & commOK_M251 & "/" & commFault_M251 & ")"
+            BarraStatusM251.ForeColor = CorConectado
+            For i = 1 To 100
+                blcGeral3(300 - 1 + i) = readVals1(i)
             Next
 
             Ambientes(21).varTemperatura = blcGeral3(300)   'Camara1
@@ -1304,13 +1580,9 @@ Public Class MainForm
             Ambientes(32).varSetPoint = blcGeral3(357)
         End If
 
-        slave = 1
-        startRdReg = 400
-        numRdRegs = 100
-        res = M251.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
-            For i = 1 To numRdRegs
-                blcGeral3(startRdReg - 1 + i) = readVals(i)
+        If res2 = BusProtocolErrors.FTALK_SUCCESS Then
+            For i = 1 To 100
+                blcGeral3(400 - 1 + i) = readVals2(i)
             Next
 
             Ambientes(21).varOffSet = blcGeral3(400)
@@ -1340,13 +1612,9 @@ Public Class MainForm
             Ambientes(32).varStatusAmbiente = blcGeral3(457)
         End If
 
-        slave = 1
-        startRdReg = 500
-        numRdRegs = 100
-        res = M251.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-        If res = BusProtocolErrors.FTALK_SUCCESS Then
-            For i = 1 To numRdRegs
-                blcGeral3(startRdReg - 1 + i) = readVals(i)
+        If res3 = BusProtocolErrors.FTALK_SUCCESS Then
+            For i = 1 To 100
+                blcGeral3(500 - 1 + i) = readVals3(i)
             Next
 
             Ambientes(21).varStatus = blcGeral3(500)
@@ -1686,19 +1954,16 @@ Public Class MainForm
             Ambientes(32).bitLDVSAG = DesfragmentaBit(Ambientes(32).varStatus, 13)
             'Ambientes(32).bitFalhaEvaporador1 = DesfragmentaBit(varAlarmes1, 0)
             'Ambientes(32).bitFalhaEvaporador2 = DesfragmentaBit(varAlarmes1, 1)
-
+        Else
+            IncrementarContador(commFault_M251)
+            BarraStatusM251.Text = "M251: OFF (" & commOK_M251 & "/" & commFault_M251 & ")"
+            BarraStatusM251.ForeColor = CorDesconectado
         End If
 
-        If varAmbienteAtivo <> 0 And Ambientes(varAmbienteAtivo).varCLP = 3 Then
-            slave = 1
-            startRdReg = Ambientes(varAmbienteAtivo).varStartAdress
-            numRdRegs = 19
-            res = M251.readMultipleRegisters(slave, startRdReg, readVals, numRdRegs)
-            If res = BusProtocolErrors.FTALK_SUCCESS Then
-                For j = 1 To numRdRegs
-                    blcGeral3(startRdReg - 1 + j) = readVals(j)
-                Next
-            End If
+        If lerAmbiente AndAlso res4 = BusProtocolErrors.FTALK_SUCCESS Then
+            For j = 1 To 19
+                blcGeral3(startRdReg2 - 1 + j) = readVals4(j)
+            Next
 
             'bits de habilita degelo
             varST = Ambientes(varAmbienteAtivo).varADControle
@@ -1729,7 +1994,7 @@ Public Class MainForm
             Ambientes(varAmbienteAtivo).varHoraDegelo3 = blcGeral3(varST + 12) \ 100
             Ambientes(varAmbienteAtivo).varMinutoDegelo3 = blcGeral3(varST + 12) Mod 100
         End If
-
+        Timer_M251.Start()
     End Sub
 
 
@@ -1895,6 +2160,44 @@ Public Class MainForm
         _frmRelatorio = New FrmRelatorios(_db, ConfiguracaoApp.Carregar())
         AddHandler _frmRelatorio.FormClosed, Sub(s, ev) _frmRelatorio = Nothing
         _frmRelatorio.Show(Me)
+    End Sub
+
+    Private Sub BarraStatusLabel2_DoubleClick(sender As Object, e As EventArgs) Handles BarraStatusLabel2.DoubleClick
+        commOK_Sadema = 0
+        commFault_Sadema = 0
+        commOK_Comp1 = 0
+        commFault_Comp1 = 0
+        commOK_Comp2 = 0
+        commFault_Comp2 = 0
+        commOK_Comp3 = 0
+        commFault_Comp3 = 0
+        commOK_CLP2 = 0
+        commFault_CLP2 = 0
+        commOK_M251 = 0
+        commFault_M251 = 0
+
+        ' Atualiza os status e contadores imediatamente na tela com o formato compacto e cores corretas
+        ToolStripStatusLabel1.Text = "S71200: " & If(myProtocol IsNot Nothing AndAlso myProtocol.isOpen, "ON", "OFF") & " (0/0)"
+        ToolStripStatusLabel1.ForeColor = If(myProtocol IsNot Nothing AndAlso myProtocol.isOpen, CorConectado, CorDesconectado)
+        BarraStatusLabel3.Text = "CP1: " & If(MBComp1 IsNot Nothing AndAlso MBComp1.isOpen, "ON", "OFF") & " (0/0)"
+        BarraStatusLabel3.ForeColor = If(MBComp1 IsNot Nothing AndAlso MBComp1.isOpen, CorConectado, CorDesconectado)
+        BarraStatusLabel4.Text = "CP2: " & If(MBComp2 IsNot Nothing AndAlso MBComp2.isOpen, "ON", "OFF") & " (0/0)"
+        BarraStatusLabel4.ForeColor = If(MBComp2 IsNot Nothing AndAlso MBComp2.isOpen, CorConectado, CorDesconectado)
+        BarraStatusLabel5.Text = "CP3: " & If(MBComp3 IsNot Nothing AndAlso MBComp3.isOpen, "ON", "OFF") & " (0/0)"
+        BarraStatusLabel5.ForeColor = If(MBComp3 IsNot Nothing AndAlso MBComp3.isOpen, CorConectado, CorDesconectado)
+        BarraStatusLabel6.Text = "M221: " & If(CLP_2 IsNot Nothing AndAlso CLP_2.isOpen, "ON", "OFF") & " (0/0)"
+        BarraStatusLabel6.ForeColor = If(CLP_2 IsNot Nothing AndAlso CLP_2.isOpen, CorConectado, CorDesconectado)
+        BarraStatusM251.Text = "M251: " & If(M251 IsNot Nothing AndAlso M251.isOpen, "ON", "OFF") & " (0/0)"
+        BarraStatusM251.ForeColor = If(M251 IsNot Nothing AndAlso M251.isOpen, CorConectado, CorDesconectado)
+
+        LogService.GravarInfo("SISTEMA", "Contadores de comunicação reiniciados manualmente pelo usuário.")
+    End Sub
+
+    Private Sub IncrementarContador(ByRef contador As Int32)
+        contador += 1
+        If contador >= 1000000000 Then
+            contador = 0
+        End If
     End Sub
 
 End Class

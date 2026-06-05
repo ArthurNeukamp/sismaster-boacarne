@@ -1,4 +1,4 @@
-﻿Imports FieldTalk.Modbus.Master
+Imports FieldTalk.Modbus.Master
 
 Module Module2
     'função para explorar bit a bit (retorna se determinado bit é true ou false.
@@ -133,21 +133,18 @@ Module Module2
     End Function
 
     Function ConectarCLPSadema() As Boolean
-        ' Make sure we close rather than leaving closing to the garbage collector
-        If Not MainForm.myProtocol Is Nothing Then
-            MainForm.myProtocol.closeProtocol()
+        If MainForm.myProtocol Is Nothing Then
+            Try
+                MainForm.myProtocol = New MbusTcpMasterProtocol()
+            Catch ex As Exception
+                MainForm.lblResult.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
+                LogService.GravarErro("COMUNICACAO", "Erro ao criar instancia do myProtocol (CLP Sadema): " & ex.Message)
+                Return False
+            End Try
         End If
-        '
-        ' Create and open protocol
-        '
-        Try
-            MainForm.myProtocol = New MbusTcpMasterProtocol
-        Catch ex As OutOfMemoryException
-            MainForm.lblResult.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
-        End Try
-        '
-        ' Here we configure the protocol
-        '
+
+        MainForm.myProtocol.closeProtocol()
+
         Dim retryCnt, pollDelay, timeOut, tcpPort, res As Int32
         retryCnt = 0
         pollDelay = 0
@@ -157,47 +154,39 @@ Module Module2
         MainForm.myProtocol.timeout = timeOut
         MainForm.myProtocol.retryCnt = retryCnt
         MainForm.myProtocol.pollDelay = pollDelay
-        ' Note: The following CType() cast is required as the myProtocol object is declared
-        ' as the superclass of MbusTcpMasterProtocol. That way myProtocol can
-        ' represent different protocol types.
         CType(MainForm.myProtocol, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.myProtocol, MbusIpClientBase).openProtocol("10.15.16.162")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
             MainForm.lblResult.Text = "Modbus/TCP port opened successfully with parameters: 10.15.16.162 TCP port " & tcpPort
+            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no CLP Sadema (10.15.16.162)")
         Else
             MainForm.lblResult.Text = "Could not open protocol, error was: " & BusProtocolErrors.getBusProtocolErrorText(res)
+            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no CLP Sadema (10.15.16.162): " & BusProtocolErrors.getBusProtocolErrorText(res))
             MainForm.myProtocol.closeProtocol()
         End If
 
         If MainForm.myProtocol.isOpen Then
-            MainForm.ToolStripStatusLabel1.Text = "CLP: Conectado"
             MainForm.TimerCLP.Interval = 500
             ConectarCLPSadema = True
         Else
-            MainForm.ToolStripStatusLabel1.Text = "CLP: Desconectado"
             MainForm.TimerCLP.Interval = 5000
-            MainForm.varContadorCommFault += 1
-            MainForm.BarraStatusLabel2.Text = "Contadores: " & MainForm.varContadorCommOK & " OK - " & MainForm.varContadorCommFault & " Fault"
             ConectarCLPSadema = False
         End If
     End Function
 
     Function ConectarMBComp1() As Boolean
-        ' Make sure we close rather than leaving closing to the garbage collector
-        If Not MainForm.MBComp1 Is Nothing Then
-            MainForm.MBComp1.closeProtocol()
+        If MainForm.MBComp1 Is Nothing Then
+            Try
+                MainForm.MBComp1 = New MbusTcpMasterProtocol()
+            Catch ex As Exception
+                MainForm.BarraStatusLabel3.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
+                LogService.GravarErro("COMUNICACAO", "Erro ao criar instancia do MBComp1 (Compressor 1): " & ex.Message)
+                Return False
+            End Try
         End If
-        '
-        ' Create and open protocol
-        '
-        Try
-            MainForm.MBComp1 = New MbusTcpMasterProtocol
-        Catch ex As OutOfMemoryException
-            MainForm.BarraStatusLabel3.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
-        End Try
-        '
-        ' Here we configure the protocol
-        '
+
+        MainForm.MBComp1.closeProtocol()
+
         Dim retryCnt, pollDelay, timeOut, tcpPort, res As Int32
         retryCnt = 0
         pollDelay = 0
@@ -207,45 +196,37 @@ Module Module2
         MainForm.MBComp1.timeout = timeOut
         MainForm.MBComp1.retryCnt = retryCnt
         MainForm.MBComp1.pollDelay = pollDelay
-        ' Note: The following CType() cast is required as the myProtocol object is declared
-        ' as the superclass of MbusTcpMasterProtocol. That way myProtocol can
-        ' represent different protocol types.
         CType(MainForm.MBComp1, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.MBComp1, MbusIpClientBase).openProtocol("10.15.16.150")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
-            MainForm.BarraStatusLabel3.Text = "Compressor 1: Conectado"
+            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no Compressor 1 (10.15.16.150)")
         Else
-            MainForm.BarraStatusLabel3.Text = "Comp 1 - Não Conectado" & BusProtocolErrors.getBusProtocolErrorText(res)
+            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no Compressor 1 (10.15.16.150): " & BusProtocolErrors.getBusProtocolErrorText(res))
             MainForm.MBComp1.closeProtocol()
         End If
 
         If MainForm.MBComp1.isOpen Then
-            MainForm.BarraStatusLabel3.Text = "Compressor 1: Conectado"
             MainForm.TimerCompressor1.Interval = 1000
             ConectarMBComp1 = True
         Else
-            MainForm.BarraStatusLabel3.Text = "Compressor 1: Desconectado"
             MainForm.TimerCompressor1.Interval = 10000
             ConectarMBComp1 = False
         End If
     End Function
 
     Function ConectarMBComp2() As Boolean
-        ' Make sure we close rather than leaving closing to the garbage collector
-        If Not MainForm.MBComp2 Is Nothing Then
-            MainForm.MBComp2.closeProtocol()
+        If MainForm.MBComp2 Is Nothing Then
+            Try
+                MainForm.MBComp2 = New MbusTcpMasterProtocol()
+            Catch ex As Exception
+                MainForm.BarraStatusLabel4.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
+                LogService.GravarErro("COMUNICACAO", "Erro ao criar instancia do MBComp2 (Compressor 2): " & ex.Message)
+                Return False
+            End Try
         End If
-        '
-        ' Create and open protocol
-        '
-        Try
-            MainForm.MBComp2 = New MbusTcpMasterProtocol
-        Catch ex As OutOfMemoryException
-            MainForm.BarraStatusLabel4.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
-        End Try
-        '
-        ' Here we configure the protocol
-        '
+
+        MainForm.MBComp2.closeProtocol()
+
         Dim retryCnt, pollDelay, timeOut, tcpPort, res As Int32
         retryCnt = 0
         pollDelay = 0
@@ -255,44 +236,36 @@ Module Module2
         MainForm.MBComp2.timeout = timeOut
         MainForm.MBComp2.retryCnt = retryCnt
         MainForm.MBComp2.pollDelay = pollDelay
-        ' Note: The following CType() cast is required as the myProtocol object is declared
-        ' as the superclass of MbusTcpMasterProtocol. That way myProtocol can
-        ' represent different protocol types.
         CType(MainForm.MBComp2, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.MBComp2, MbusIpClientBase).openProtocol("10.15.16.151")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
-            MainForm.BarraStatusLabel4.Text = "Compressor 2: Conectado"
+            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no Compressor 2 (10.15.16.151)")
         Else
-            MainForm.BarraStatusLabel4.Text = "Comp 2 - Não Conectado" & BusProtocolErrors.getBusProtocolErrorText(res)
+            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no Compressor 2 (10.15.16.151): " & BusProtocolErrors.getBusProtocolErrorText(res))
             MainForm.MBComp2.closeProtocol()
         End If
 
         If MainForm.MBComp2.isOpen Then
-            MainForm.BarraStatusLabel4.Text = "Compressor 2: Conectado"
             MainForm.TimerCompressor2.Interval = 1000
             ConectarMBComp2 = True
         Else
-            MainForm.BarraStatusLabel4.Text = "Compressor 2: Desconectado"
             MainForm.TimerCompressor2.Interval = 10000
             ConectarMBComp2 = False
         End If
     End Function
     Function ConectarMBComp3() As Boolean
-        ' Make sure we close rather than leaving closing to the garbage collector
-        If Not MainForm.MBComp3 Is Nothing Then
-            MainForm.MBComp3.closeProtocol()
+        If MainForm.MBComp3 Is Nothing Then
+            Try
+                MainForm.MBComp3 = New MbusTcpMasterProtocol()
+            Catch ex As Exception
+                MainForm.BarraStatusLabel5.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
+                LogService.GravarErro("COMUNICACAO", "Erro ao criar instancia do MBComp3 (Compressor 3): " & ex.Message)
+                Return False
+            End Try
         End If
-        '
-        ' Create and open protocol
-        '
-        Try
-            MainForm.MBComp3 = New MbusTcpMasterProtocol
-        Catch ex As OutOfMemoryException
-            MainForm.BarraStatusLabel5.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
-        End Try
-        '
-        ' Here we configure the protocol
-        '
+
+        MainForm.MBComp3.closeProtocol()
+
         Dim retryCnt, pollDelay, timeOut, tcpPort, res As Int32
         retryCnt = 0
         pollDelay = 0
@@ -302,45 +275,37 @@ Module Module2
         MainForm.MBComp3.timeout = timeOut
         MainForm.MBComp3.retryCnt = retryCnt
         MainForm.MBComp3.pollDelay = pollDelay
-        ' Note: The following CType() cast is required as the myProtocol object is declared
-        ' as the superclass of MbusTcpMasterProtocol. That way myProtocol can
-        ' represent different protocol types.
         CType(MainForm.MBComp3, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.MBComp3, MbusIpClientBase).openProtocol("10.15.16.152")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
-            MainForm.BarraStatusLabel5.Text = "Compressor 3: Conectado"
+            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no Compressor 3 (10.15.16.152)")
         Else
-            MainForm.BarraStatusLabel5.Text = "Comp 3 - Não Conectado" & BusProtocolErrors.getBusProtocolErrorText(res)
+            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no Compressor 3 (10.15.16.152): " & BusProtocolErrors.getBusProtocolErrorText(res))
             MainForm.MBComp3.closeProtocol()
         End If
 
         If MainForm.MBComp3.isOpen Then
-            MainForm.BarraStatusLabel5.Text = "Compressor 3: Conectado"
             MainForm.TimerCompressor3.Interval = 1000
             ConectarMBComp3 = True
         Else
-            MainForm.BarraStatusLabel5.Text = "Compressor 3: Desconectado"
             MainForm.TimerCompressor3.Interval = 10000
             ConectarMBComp3 = False
         End If
     End Function
 
     Function ConectarCLP2() As Boolean
-        ' Make sure we close rather than leaving closing to the garbage collector
-        If Not MainForm.CLP_2 Is Nothing Then
-            MainForm.CLP_2.closeProtocol()
+        If MainForm.CLP_2 Is Nothing Then
+            Try
+                MainForm.CLP_2 = New MbusTcpMasterProtocol()
+            Catch ex As Exception
+                MainForm.BarraStatusLabel6.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
+                LogService.GravarErro("COMUNICACAO", "Erro ao criar instancia do CLP_2 (CLP 2): " & ex.Message)
+                Return False
+            End Try
         End If
-        '
-        ' Create and open protocol
-        '
-        Try
-            MainForm.CLP_2 = New MbusTcpMasterProtocol
-        Catch ex As OutOfMemoryException
-            MainForm.BarraStatusLabel6.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
-        End Try
-        '
-        ' Here we configure the protocol
-        '
+
+        MainForm.CLP_2.closeProtocol()
+
         Dim retryCnt, pollDelay, timeOut, tcpPort, res As Int32
         retryCnt = 0
         pollDelay = 0
@@ -350,24 +315,19 @@ Module Module2
         MainForm.CLP_2.timeout = timeOut
         MainForm.CLP_2.retryCnt = retryCnt
         MainForm.CLP_2.pollDelay = pollDelay
-        ' Note: The following CType() cast is required as the myProtocol object is declared
-        ' as the superclass of MbusTcpMasterProtocol. That way myProtocol can
-        ' represent different protocol types.
         CType(MainForm.CLP_2, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.CLP_2, MbusIpClientBase).openProtocol("10.15.16.164")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
-            MainForm.BarraStatusLabel6.Text = "CLP 2: Conectado"
+            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no CLP 2 (10.15.16.164)")
         Else
-            MainForm.BarraStatusLabel6.Text = "CLP 2 - Não Conectado" & BusProtocolErrors.getBusProtocolErrorText(res)
+            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no CLP 2 (10.15.16.164): " & BusProtocolErrors.getBusProtocolErrorText(res))
             MainForm.CLP_2.closeProtocol()
         End If
 
         If MainForm.CLP_2.isOpen Then
-            MainForm.BarraStatusLabel6.Text = "CLP 2: Conectado"
             MainForm.Timer_CLP2.Interval = 500
             ConectarCLP2 = True
         Else
-            MainForm.BarraStatusLabel6.Text = "CLP 2: Desconectado"
             MainForm.Timer_CLP2.Interval = 5000
             ConectarCLP2 = False
         End If
@@ -375,21 +335,18 @@ Module Module2
 
     Function ConectarM251() As Boolean
         MainForm.BarraStatusM251.Text = "Conectar"
-        ' Make sure we close rather than leaving closing to the garbage collector
-        If Not MainForm.M251 Is Nothing Then
-            MainForm.M251.closeProtocol()
+        If MainForm.M251 Is Nothing Then
+            Try
+                MainForm.M251 = New MbusTcpMasterProtocol()
+            Catch ex As Exception
+                MainForm.BarraStatusM251.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
+                LogService.GravarErro("COMUNICACAO", "Erro ao criar instancia do M251 (CLP M251): " & ex.Message)
+                Return False
+            End Try
         End If
-        '
-        ' Create and open protocol
-        '
-        Try
-            MainForm.M251 = New MbusTcpMasterProtocol
-        Catch ex As OutOfMemoryException
-            MainForm.BarraStatusM251.Text = "Could not instantiate ethernet protocol class! Error was " & ex.Message
-        End Try
-        '
-        ' Here we configure the protocol
-        '
+
+        MainForm.M251.closeProtocol()
+
         Dim retryCnt, pollDelay, timeOut, tcpPort, res As Int32
         retryCnt = 0
         pollDelay = 0
@@ -399,24 +356,19 @@ Module Module2
         MainForm.M251.timeout = timeOut
         MainForm.M251.retryCnt = retryCnt
         MainForm.M251.pollDelay = pollDelay
-        ' Note: The following CType() cast is required as the myProtocol object is declared
-        ' as the superclass of MbusTcpMasterProtocol. That way myProtocol can
-        ' represent different protocol types.
         CType(MainForm.M251, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.M251, MbusIpClientBase).openProtocol("10.15.16.166")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
-            MainForm.BarraStatusM251.Text = "M251: Conectado"
+            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no CLP M251 (10.15.16.166)")
         Else
-            MainForm.BarraStatusM251.Text = "M251 - Não Conectado" & BusProtocolErrors.getBusProtocolErrorText(res)
+            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no CLP M251 (10.15.16.166): " & BusProtocolErrors.getBusProtocolErrorText(res))
             MainForm.M251.closeProtocol()
         End If
 
         If MainForm.M251.isOpen Then
-            MainForm.BarraStatusM251.Text = "M251: Conectado"
             MainForm.Timer_M251.Interval = 500
             ConectarM251 = True
         Else
-            MainForm.BarraStatusM251.Text = "M251: Desconectado"
             MainForm.Timer_M251.Interval = 5000
             ConectarM251 = False
         End If

@@ -94,6 +94,7 @@ Public Class AquisicaoService
                     ' Limpeza de registros antigos uma vez por dia.
                     If _ultimaLimpeza.Date < DateTime.Today Then
                         _db.LimparRegistrosAntigos(_config.RetencaoMeses)
+                        LogService.LimparLogsAntigos(60)
                         _ultimaLimpeza = DateTime.Today
                     End If
 
