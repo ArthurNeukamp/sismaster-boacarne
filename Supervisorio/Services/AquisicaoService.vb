@@ -137,6 +137,18 @@ Public Class AquisicaoService
                 .Temperatura = _form.Ambientes(sid).varTemperatura / 10.0,
                 .ClpOk       = clpAtivo
             })
+
+            ' FASE 1: Se for câmara de carcaça (21 a 27), duplica como FAKE
+            If sid >= 21 AndAlso sid <= 27 Then
+                Dim nomeFake As String = nomeConfigurado & "_FAKE"
+                leituras.Add(New LeituraDto With {
+                    .DataHora    = dataColeta,
+                    .SensorId    = sid + 100,
+                    .Nome        = nomeFake,
+                    .Temperatura = _form.Ambientes(sid).varTemperatura / 10.0,
+                    .ClpOk       = clpAtivo
+                })
+            End If
         Next
         Return leituras
     End Function

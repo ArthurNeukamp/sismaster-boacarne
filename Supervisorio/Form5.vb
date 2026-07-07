@@ -1,4 +1,4 @@
-﻿Public Class FrmAmbientes
+Public Class FrmAmbientes
     Public AmbienteAtivo As Integer
     Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
         Dim varTempoDecorridoMin, varTempoDecorridoSeg As Integer
@@ -852,16 +852,26 @@
     Private Sub edtOffset_KeyPress(sender As Object, e As KeyPressEventArgs) Handles edtOffset.KeyPress
         Dim Valor As Short
         If e.KeyChar = Chr(13) Then
-            Valor = CShort(edtOffset.Text) * 10
-            EscreveOffSet(MainForm.Ambientes(AmbienteAtivo).varCLP, MainForm.Ambientes(AmbienteAtivo).varADOffSet, Valor)
+            Dim rawText As String = edtOffset.Text.Trim()
+            Dim valorDouble As Double
+            If Double.TryParse(rawText, valorDouble) Then
+                Valor = CShort(valorDouble * 10)
+                EscreveOffSet(MainForm.Ambientes(AmbienteAtivo).varCLP, MainForm.Ambientes(AmbienteAtivo).varADOffSet, Valor)
+            Else
+                MessageBox.Show("A alteração deve ser apenas numérica. Verifique se digitou letras ou símbolos como '°C'.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End If
         End If
     End Sub
 
     Private Sub edtSetPoint_KeyPress(sender As Object, e As KeyPressEventArgs) Handles edtSetPoint.KeyPress
         Dim Valor As Short
         If e.KeyChar = Chr(13) Then
-            Valor = CShort(edtSetPoint.Text)
-            EscreveSetpoint(MainForm.Ambientes(AmbienteAtivo).varCLP, MainForm.Ambientes(AmbienteAtivo).varADSetpoint, Valor)
+            Dim rawText As String = edtSetPoint.Text.Trim()
+            If Short.TryParse(rawText, Valor) Then
+                EscreveSetpoint(MainForm.Ambientes(AmbienteAtivo).varCLP, MainForm.Ambientes(AmbienteAtivo).varADSetpoint, Valor)
+            Else
+                MessageBox.Show("A alteração deve ser apenas numérica. Verifique se digitou letras ou símbolos como '°C'.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End If
         End If
     End Sub
 End Class

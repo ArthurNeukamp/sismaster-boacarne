@@ -81,6 +81,15 @@ Public Class ConfiguracaoApp
                 Sensores(id) = nome
             Next
 
+            ' FASE 1: Adiciona sensores FAKE correspondentes às câmaras de carcaça (21 a 27)
+            For id As Integer = 21 To 27
+                If Sensores.ContainsKey(id) Then
+                    Sensores(id + 100) = Sensores(id) & "_FAKE"
+                Else
+                    Sensores(id + 100) = "Camara" & (id - 20) & "_FAKE"
+                End If
+            Next
+
         Catch
             CarregarPadroes()
         End Try
@@ -110,6 +119,13 @@ Public Class ConfiguracaoApp
             {40, "Bucharia Limpa"},   {41, "Bucharia Suja"},   {42, "Sala Miudos"},
             {43, "Camara Resfriamento Miudos"}, {44, "Camara Resfriamento Estomago"}
         }
+
+        ' FASE 1: Adiciona sensores FAKE correspondentes às câmaras de carcaça (21 a 27)
+        For id As Integer = 21 To 27
+            If Sensores.ContainsKey(id) Then
+                Sensores(id + 100) = Sensores(id) & "_FAKE"
+            End If
+        Next
     End Sub
 
 End Class
