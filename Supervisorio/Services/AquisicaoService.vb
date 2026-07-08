@@ -79,13 +79,9 @@ Public Class AquisicaoService
                 _ultimaDataColetada = dataAlinhada
 
                 Try
-                    Dim clpAtivo As Boolean = _form.myProtocol?.isOpen() OrElse
-                                              _form.CLP_2?.isOpen() OrElse
-                                              _form.M251?.isOpen()
-
                     ' Coleta na UI thread para evitar leitura concorrente de variáveis de CLP.
                     Dim snapshot As List(Of LeituraDto) = Nothing
-                    _form.Invoke(Sub() snapshot = ColetarSnapshot(clpAtivo, dataAlinhada))
+                    _form.Invoke(Sub() snapshot = ColetarSnapshot(dataAlinhada))
 
                     If snapshot IsNot Nothing Then
                         _db.InserirLote(snapshot)
@@ -108,10 +104,10 @@ Public Class AquisicaoService
     ' Retorna a próxima data de minuto redondo que atenda ao intervalo e possua o atraso mínimo de segurança.
     Private Function ObterProximoHorarioCompativel(agora As DateTime, intervaloMinutos As Integer, atrasoMinimoSegundos As Integer) As DateTime
         If intervaloMinutos <= 0 Then intervaloMinutos = 1
-        
+
         ' Começa a procurar a partir do minuto corrente com segundos e ms zerados
         Dim dataFoco = New DateTime(agora.Year, agora.Month, agora.Day, agora.Hour, agora.Minute, 0)
-        
+
         Do
             dataFoco = dataFoco.AddMinutes(1)
             If dataFoco.Minute Mod intervaloMinutos = 0 Then
@@ -123,32 +119,30 @@ Public Class AquisicaoService
         Loop
     End Function
 
-    Private Function ColetarSnapshot(clpAtivo As Boolean, dataColeta As DateTime) As List(Of LeituraDto)
+    Private Function ColetarSnapshot(dataColeta As DateTime) As List(Of LeituraDto)
         Dim leituras = New List(Of LeituraDto)(_sensorIds.Length)
 
         For Each sid In _sensorIds
             Dim nomeConfigurado As String = $"Sensor {sid}"
             _config.Sensores.TryGetValue(sid, nomeConfigurado)
 
-            leituras.Add(New LeituraDto With {
-                .DataHora    = dataColeta,
-                .SensorId    = sid,
-                .Nome        = nomeConfigurado,
-                .Temperatura = _form.Ambientes(sid).varTemperatura / 10.0,
-                .ClpOk       = clpAtivo
-            })
-
-            ' FASE 1: Se for câmara de carcaça (21 a 27), duplica como FAKE
-            If sid >= 21 AndAlso sid <= 27 Then
-                Dim nomeFake As String = nomeConfigurado & "_FAKE"
-                leituras.Add(New LeituraDto With {
-                    .DataHora    = dataColeta,
-                    .SensorId    = sid + 100,
-                    .Nome        = nomeFake,
-                    .Temperatura = _form.Ambientes(sid).varTemperatura / 10.0,
-                    .ClpOk       = clpAtivo
-                })
+            ' Mapeia o status real de comunicação específico do CLP responsável por cada sensor
+            Dim sensorClpOk As Boolean = False
+            If sid >= 1 AndAlso sid <= 8 Then
+                sensorClpOk = (ConnectionState_Sadema = 1)
+            ElseIf sid >= 11 AndAlso sid <= 16 Then
+                sensorClpOk = (ConnectionState_CLP2 = 1)
+            ElseIf sid >= 21 AndAlso sid <= 44 Then
+                sensorClpOk = (ConnectionState_M251 = 1)
             End If
+
+            leituras.Add(New LeituraDto With {
+                .DataHora = dataColeta,
+                .SensorId = sid,
+                .Nome = nomeConfigurado,
+                .Temperatura = _form.Ambientes(sid).varTemperatura / 10.0,
+                .ClpOk = sensorClpOk
+            })
         Next
         Return leituras
     End Function

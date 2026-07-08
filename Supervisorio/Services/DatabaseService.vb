@@ -67,6 +67,65 @@ Public Class DatabaseService
         End Using
     End Sub
 
+    ' Insere ou atualiza (Upsert) uma lista de leituras em lote.
+    ' Se o registro (sensor_id + data_hora) ja existir, atualiza a temperatura/nome/clp_ok.
+    ' Caso contrario, insere um novo registro.
+    Public Sub UpsertLeituras(leituras As List(Of LeituraDto))
+        If leituras Is Nothing OrElse leituras.Count = 0 Then Return
+
+        Using conn = CriarConexao()
+            conn.Open()
+            Using trans = conn.BeginTransaction()
+                Using cmdUpdate = conn.CreateCommand()
+                    cmdUpdate.CommandText =
+                        "UPDATE leituras SET temperatura = @temp, clp_ok = @ok, nome = @nome
+                         WHERE sensor_id = @sid AND data_hora = @dt"
+                    
+                    Dim pTempU = cmdUpdate.Parameters.Add("@temp", SqliteType.Real)
+                    Dim pOkU   = cmdUpdate.Parameters.Add("@ok",   SqliteType.Integer)
+                    Dim pNomeU = cmdUpdate.Parameters.Add("@nome", SqliteType.Text)
+                    Dim pSidU  = cmdUpdate.Parameters.Add("@sid",  SqliteType.Integer)
+                    Dim pDtU   = cmdUpdate.Parameters.Add("@dt",   SqliteType.Text)
+
+                    Using cmdInsert = conn.CreateCommand()
+                        cmdInsert.CommandText =
+                            "INSERT INTO leituras (data_hora, sensor_id, nome, temperatura, clp_ok)
+                             VALUES (@dt, @sid, @nome, @temp, @ok)"
+                        
+                        Dim pDtI   = cmdInsert.Parameters.Add("@dt",   SqliteType.Text)
+                        Dim pSidI  = cmdInsert.Parameters.Add("@sid",  SqliteType.Integer)
+                        Dim pNomeI = cmdInsert.Parameters.Add("@nome", SqliteType.Text)
+                        Dim pTempI = cmdInsert.Parameters.Add("@temp", SqliteType.Real)
+                        Dim pOkI   = cmdInsert.Parameters.Add("@ok",   SqliteType.Integer)
+
+                        For Each l In leituras
+                            Dim dtStr As String = l.DataHora.ToString("yyyy-MM-dd HH:mm:ss")
+                            
+                            ' Tenta o UPDATE primeiro
+                            pTempU.Value = l.Temperatura
+                            pOkU.Value   = If(l.ClpOk, 1, 0)
+                            pNomeU.Value = l.Nome
+                            pSidU.Value  = l.SensorId
+                            pDtU.Value   = dtStr
+                            
+                            Dim rowsAffected = cmdUpdate.ExecuteNonQuery()
+                            If rowsAffected = 0 Then
+                                ' Nao encontrou registro, faz o INSERT
+                                pDtI.Value   = dtStr
+                                pSidI.Value  = l.SensorId
+                                pNomeI.Value = l.Nome
+                                pTempI.Value = l.Temperatura
+                                pOkI.Value   = If(l.ClpOk, 1, 0)
+                                cmdInsert.ExecuteNonQuery()
+                            End If
+                        Next
+                    End Using
+                End Using
+                trans.Commit()
+            End Using
+        End Using
+    End Sub
+
     ' Remove registros com data_hora anterior ao limite de retencao.
     ' Retorna o numero de linhas deletadas.
     Public Function LimparRegistrosAntigos(meses As Integer) As Integer
@@ -81,6 +140,21 @@ Public Class DatabaseService
             End Using
         End Using
     End Function
+
+    ' Remove registros de um sensor especifico em um determinado intervalo.
+    ' Usado para limpar dados FAKE anteriores antes de gravar a nova simulacao.
+    Public Sub LimparPeriodoSensor(sensorId As Integer, inicio As DateTime, fim As DateTime)
+        Using conn = CriarConexao()
+            conn.Open()
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "DELETE FROM leituras WHERE sensor_id = @sid AND data_hora BETWEEN @ini AND @fim"
+                cmd.Parameters.AddWithValue("@sid", sensorId)
+                cmd.Parameters.AddWithValue("@ini", inicio.ToString("yyyy-MM-dd HH:mm:ss"))
+                cmd.Parameters.AddWithValue("@fim", fim.ToString("yyyy-MM-dd HH:mm:ss"))
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
 
     ' Consulta leituras de um unico sensor em um periodo.
     ' Retorna DataTable com colunas data_hora e temperatura.

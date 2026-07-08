@@ -1,6 +1,15 @@
 Imports FieldTalk.Modbus.Master
 
 Module Module2
+    ' Variáveis globais para rastrear o estado da última tentativa de conexão (0=Inicial, 1=Conectado, 2=Desconectado)
+    ' Evita repetições e poluição nos arquivos diários de logs.
+    Public ConnectionState_Sadema As Integer = 0
+    Public ConnectionState_CLP2 As Integer = 0
+    Public ConnectionState_M251 As Integer = 0
+    Public ConnectionState_MBComp1 As Integer = 0
+    Public ConnectionState_MBComp2 As Integer = 0
+    Public ConnectionState_MBComp3 As Integer = 0
+
     'função para explorar bit a bit (retorna se determinado bit é true ou false.
     Function DesfragmentaBit(Valor As Int16, NumBit As Int16) As Boolean
         If (Valor >> NumBit And 1) <> 0 Then
@@ -158,10 +167,16 @@ Module Module2
         res = CType(MainForm.myProtocol, MbusIpClientBase).openProtocol("10.15.16.162")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
             MainForm.lblResult.Text = "Modbus/TCP port opened successfully with parameters: 10.15.16.162 TCP port " & tcpPort
-            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no CLP Sadema (10.15.16.162)")
+            If ConnectionState_Sadema <> 1 Then
+                LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no CLP Sadema (10.15.16.162)")
+                ConnectionState_Sadema = 1
+            End If
         Else
             MainForm.lblResult.Text = "Could not open protocol, error was: " & BusProtocolErrors.getBusProtocolErrorText(res)
-            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no CLP Sadema (10.15.16.162): " & BusProtocolErrors.getBusProtocolErrorText(res))
+            If ConnectionState_Sadema <> 2 Then
+                LogService.GravarErro("COMUNICACAO", "Falha ao conectar no CLP Sadema (10.15.16.162): " & BusProtocolErrors.getBusProtocolErrorText(res))
+                ConnectionState_Sadema = 2
+            End If
             MainForm.myProtocol.closeProtocol()
         End If
 
@@ -199,9 +214,15 @@ Module Module2
         CType(MainForm.MBComp1, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.MBComp1, MbusIpClientBase).openProtocol("10.15.16.150")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
-            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no Compressor 1 (10.15.16.150)")
+            If ConnectionState_MBComp1 <> 1 Then
+                LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no Compressor 1 (10.15.16.150)")
+                ConnectionState_MBComp1 = 1
+            End If
         Else
-            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no Compressor 1 (10.15.16.150): " & BusProtocolErrors.getBusProtocolErrorText(res))
+            If ConnectionState_MBComp1 <> 2 Then
+                LogService.GravarErro("COMUNICACAO", "Falha ao conectar no Compressor 1 (10.15.16.150): " & BusProtocolErrors.getBusProtocolErrorText(res))
+                ConnectionState_MBComp1 = 2
+            End If
             MainForm.MBComp1.closeProtocol()
         End If
 
@@ -239,9 +260,15 @@ Module Module2
         CType(MainForm.MBComp2, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.MBComp2, MbusIpClientBase).openProtocol("10.15.16.151")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
-            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no Compressor 2 (10.15.16.151)")
+            If ConnectionState_MBComp2 <> 1 Then
+                LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no Compressor 2 (10.15.16.151)")
+                ConnectionState_MBComp2 = 1
+            End If
         Else
-            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no Compressor 2 (10.15.16.151): " & BusProtocolErrors.getBusProtocolErrorText(res))
+            If ConnectionState_MBComp2 <> 2 Then
+                LogService.GravarErro("COMUNICACAO", "Falha ao conectar no Compressor 2 (10.15.16.151): " & BusProtocolErrors.getBusProtocolErrorText(res))
+                ConnectionState_MBComp2 = 2
+            End If
             MainForm.MBComp2.closeProtocol()
         End If
 
@@ -278,9 +305,15 @@ Module Module2
         CType(MainForm.MBComp3, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.MBComp3, MbusIpClientBase).openProtocol("10.15.16.152")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
-            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no Compressor 3 (10.15.16.152)")
+            If ConnectionState_MBComp3 <> 1 Then
+                LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no Compressor 3 (10.15.16.152)")
+                ConnectionState_MBComp3 = 1
+            End If
         Else
-            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no Compressor 3 (10.15.16.152): " & BusProtocolErrors.getBusProtocolErrorText(res))
+            If ConnectionState_MBComp3 <> 2 Then
+                LogService.GravarErro("COMUNICACAO", "Falha ao conectar no Compressor 3 (10.15.16.152): " & BusProtocolErrors.getBusProtocolErrorText(res))
+                ConnectionState_MBComp3 = 2
+            End If
             MainForm.MBComp3.closeProtocol()
         End If
 
@@ -318,9 +351,15 @@ Module Module2
         CType(MainForm.CLP_2, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.CLP_2, MbusIpClientBase).openProtocol("10.15.16.164")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
-            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no CLP 2 (10.15.16.164)")
+            If ConnectionState_CLP2 <> 1 Then
+                LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no CLP 2 (10.15.16.164)")
+                ConnectionState_CLP2 = 1
+            End If
         Else
-            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no CLP 2 (10.15.16.164): " & BusProtocolErrors.getBusProtocolErrorText(res))
+            If ConnectionState_CLP2 <> 2 Then
+                LogService.GravarErro("COMUNICACAO", "Falha ao conectar no CLP 2 (10.15.16.164): " & BusProtocolErrors.getBusProtocolErrorText(res))
+                ConnectionState_CLP2 = 2
+            End If
             MainForm.CLP_2.closeProtocol()
         End If
 
@@ -359,9 +398,15 @@ Module Module2
         CType(MainForm.M251, MbusIpClientBase).port = CShort(tcpPort)
         res = CType(MainForm.M251, MbusIpClientBase).openProtocol("10.15.16.166")
         If res = BusProtocolErrors.FTALK_SUCCESS Then
-            LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no CLP M251 (10.15.16.166)")
+            If ConnectionState_M251 <> 1 Then
+                LogService.GravarInfo("COMUNICACAO", "Conexão aberta com sucesso no CLP M251 (10.15.16.166)")
+                ConnectionState_M251 = 1
+            End If
         Else
-            LogService.GravarErro("COMUNICACAO", "Falha ao conectar no CLP M251 (10.15.16.166): " & BusProtocolErrors.getBusProtocolErrorText(res))
+            If ConnectionState_M251 <> 2 Then
+                LogService.GravarErro("COMUNICACAO", "Falha ao conectar no CLP M251 (10.15.16.166): " & BusProtocolErrors.getBusProtocolErrorText(res))
+                ConnectionState_M251 = 2
+            End If
             MainForm.M251.closeProtocol()
         End If
 

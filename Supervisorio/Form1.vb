@@ -38,6 +38,7 @@ Public Class MainForm
     Public commOK_CLP2, commFault_CLP2 As Int32
     Public commOK_M251, commFault_M251 As Int32
 
+
     Private Shared ReadOnly CorConectado As Color = Color.FromArgb(0, 110, 0)
     Private Shared ReadOnly CorDesconectado As Color = Color.FromArgb(180, 0, 0)
 
@@ -102,6 +103,7 @@ Public Class MainForm
             End Sub)
 
         If res1 = BusProtocolErrors.FTALK_SUCCESS Then
+            ConnectionState_Sadema = 1
             IncrementarContador(commOK_Sadema)
             ToolStripStatusLabel1.Text = "S71200: ON (" & commOK_Sadema & "/" & commFault_Sadema & ")"
             ToolStripStatusLabel1.ForeColor = CorConectado
@@ -408,6 +410,7 @@ Public Class MainForm
                 imgLedInjecaoSeparadorOFF.Visible = True
             End If
         Else
+            ConnectionState_Sadema = 2
             IncrementarContador(commFault_Sadema)
             ToolStripStatusLabel1.Text = "S71200: OFF (" & commOK_Sadema & "/" & commFault_Sadema & ")"
             ToolStripStatusLabel1.ForeColor = CorDesconectado
@@ -1221,6 +1224,7 @@ Public Class MainForm
             End Sub)
 
         If res1 = BusProtocolErrors.FTALK_SUCCESS Then
+            ConnectionState_CLP2 = 1
             IncrementarContador(commOK_CLP2)
             BarraStatusLabel6.Text = "M221: ON (" & commOK_CLP2 & "/" & commFault_CLP2 & ")"
             BarraStatusLabel6.ForeColor = CorConectado
@@ -1427,6 +1431,7 @@ Public Class MainForm
             'Ambientes(11).bitFalhaEvaporador1 = DesfragmentaBit(varAlarmes1, 0)
             'Ambientes(11).bitFalhaEvaporador2 = DesfragmentaBit(varAlarmes1, 1)
         Else
+            ConnectionState_CLP2 = 2
             IncrementarContador(commFault_CLP2)
             BarraStatusLabel6.Text = "M221: OFF (" & commOK_CLP2 & "/" & commFault_CLP2 & ")"
             BarraStatusLabel6.ForeColor = CorDesconectado
@@ -1533,6 +1538,7 @@ Public Class MainForm
             End Sub)
 
         If res1 = BusProtocolErrors.FTALK_SUCCESS Then
+            ConnectionState_M251 = 1
             IncrementarContador(commOK_M251)
             BarraStatusM251.Text = "M251: ON (" & commOK_M251 & "/" & commFault_M251 & ")"
             BarraStatusM251.ForeColor = CorConectado
@@ -1955,6 +1961,7 @@ Public Class MainForm
             'Ambientes(32).bitFalhaEvaporador1 = DesfragmentaBit(varAlarmes1, 0)
             'Ambientes(32).bitFalhaEvaporador2 = DesfragmentaBit(varAlarmes1, 1)
         Else
+            ConnectionState_M251 = 2
             IncrementarContador(commFault_M251)
             BarraStatusM251.Text = "M251: OFF (" & commOK_M251 & "/" & commFault_M251 & ")"
             BarraStatusM251.ForeColor = CorDesconectado
@@ -2134,6 +2141,22 @@ Public Class MainForm
             Handles btnRelatorios.Click
         AbrirRelatorios()
     End Sub
+
+    Private Sub btnImportarQualidade_Click(sender As Object, e As EventArgs) Handles btnImportarQualidade.Click
+        ImportarPlanilhaQualidade()
+    End Sub
+
+    Private Sub ImportarPlanilhaQualidade()
+        Using ofd As New OpenFileDialog()
+            ofd.Filter = "Planilhas Excel (*.xlsx;*.xlsm)|*.xlsx;*.xlsm|Todos os Arquivos (*.*)|*.*"
+            ofd.Title = "Selecionar Planilha de Qualidade"
+            If ofd.ShowDialog() = DialogResult.OK Then
+                Dim frm As New FrmImportarQualidade(ofd.FileName, _db)
+                frm.ShowDialog()
+            End If
+        End Using
+    End Sub
+
 
     Private Sub RelatóriosToolStripMenuItem_Click(sender As Object,
                                                    e As EventArgs) _

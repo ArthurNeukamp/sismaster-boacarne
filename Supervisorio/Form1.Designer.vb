@@ -48,6 +48,8 @@ Partial Class MainForm
         ToolStripButton2 = New ToolStripButton()
         ToolStripSeparator5 = New ToolStripSeparator()
         btnRelatorios = New ToolStripButton()
+        ToolStripSeparator6 = New ToolStripSeparator()
+        btnImportarQualidade = New ToolStripButton()
         lblResult = New Label()
         TimerCLP = New Timer(components)
         StatusStrip1 = New StatusStrip()
@@ -152,7 +154,7 @@ Partial Class MainForm
         BarraFerramentasPrincipal.Font = New Font("Segoe UI", 8F, FontStyle.Bold, GraphicsUnit.Point)
         BarraFerramentasPrincipal.GripMargin = New Padding(10, 2, 2, 2)
         BarraFerramentasPrincipal.ImageScalingSize = New Size(70, 70)
-        BarraFerramentasPrincipal.Items.AddRange(New ToolStripItem() {ToolStripButton1, btnMenuSADEMA, ToolStripSplitButton1, BtnAlaNova, ToolStripSeparator4, btnTuneis47, ToolStripSeparator1, btnCamaras, ToolStripSeparator2, btnMiudos, ToolStripSeparator3, ToolStripButton2, ToolStripSeparator5, btnRelatorios})
+        BarraFerramentasPrincipal.Items.AddRange(New ToolStripItem() {ToolStripButton1, btnMenuSADEMA, ToolStripSplitButton1, BtnAlaNova, ToolStripSeparator4, btnTuneis47, ToolStripSeparator1, btnCamaras, ToolStripSeparator2, btnMiudos, ToolStripSeparator3, ToolStripButton2, ToolStripSeparator5, btnRelatorios, ToolStripSeparator6, btnImportarQualidade})
         BarraFerramentasPrincipal.Location = New Point(0, 24)
         BarraFerramentasPrincipal.Name = "BarraFerramentasPrincipal"
         BarraFerramentasPrincipal.Padding = New Padding(0, 0, 2, 0)
@@ -294,6 +296,20 @@ Partial Class MainForm
         btnRelatorios.Size = New Size(74, 89)
         btnRelatorios.Text = "Relatórios"
         btnRelatorios.TextImageRelation = TextImageRelation.ImageAboveText
+        ' 
+        ' ToolStripSeparator6
+        ' 
+        ToolStripSeparator6.Name = "ToolStripSeparator6"
+        ToolStripSeparator6.Size = New Size(6, 92)
+        ' 
+        ' btnImportarQualidade
+        ' 
+        btnImportarQualidade.Image = My.Resources.Resources.importar_icon
+        btnImportarQualidade.ImageTransparentColor = Color.White
+        btnImportarQualidade.Name = "btnImportarQualidade"
+        btnImportarQualidade.Size = New Size(74, 89)
+        btnImportarQualidade.Text = "Importar Planilha"
+        btnImportarQualidade.TextImageRelation = TextImageRelation.ImageAboveText
         ' 
         ' lblResult
         ' 
@@ -915,4 +931,6 @@ Partial Class MainForm
     Friend WithEvents ToolStripButton2 As ToolStripButton
     Friend WithEvents ToolStripSeparator5 As ToolStripSeparator
     Friend WithEvents btnRelatorios As ToolStripButton
+    Friend WithEvents ToolStripSeparator6 As ToolStripSeparator
+    Friend WithEvents btnImportarQualidade As ToolStripButton
 End Class

@@ -45,3 +45,18 @@ $RECYCLE.BIN/
 # Arquivos de configuração local sensível (não versionar)
 appsettings.local.*
 secrets.*
+
+# Relatórios e imagens gerados pelo simulador
+Gráficos Qualidade/
+
+# Diretório de scripts temporários e rascunhos de desenvolvimento
+scratch/
+
+# Bancos de dados locais SQLite e arquivos de escrita paralela (WAL/Journal)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Arquivos temporários do Office/Excel (arquivos de lock criados ao abrir planilhas)
+~$*
