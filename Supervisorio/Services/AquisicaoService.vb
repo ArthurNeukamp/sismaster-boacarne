@@ -40,6 +40,17 @@ Public Class AquisicaoService
         _timer.Start()
     End Sub
 
+    Public Sub Parar()
+        If _timer IsNot Nothing Then
+            Try
+                _timer.Stop()
+                _timer.Dispose()
+            Catch
+            End Try
+            _timer = Nothing
+        End If
+    End Sub
+
     ' Disparado no primeiro minuto compatível. Configura o timer para rodar a cada 60 segundos exatos.
     Private Sub OnPrimeiroTick(sender As Object, e As System.Timers.ElapsedEventArgs)
         Try

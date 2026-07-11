@@ -16,6 +16,7 @@ Public Class DatabaseService
         Using conn = CriarConexao()
             conn.Open()
             Using cmd = conn.CreateCommand()
+                ' 1. Cria a tabela de leituras
                 cmd.CommandText =
                     "CREATE TABLE IF NOT EXISTS leituras (
                          id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,6 +31,32 @@ Public Class DatabaseService
                      CREATE INDEX IF NOT EXISTS idx_sensor
                          ON leituras(sensor_id, data_hora);"
                 cmd.ExecuteNonQuery()
+
+                ' 2. Cria a tabela de usuários
+                cmd.CommandText =
+                    "CREATE TABLE IF NOT EXISTS usuarios (
+                         id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                         usuario     TEXT    UNIQUE NOT NULL,
+                         senha_hash  TEXT    NOT NULL,
+                         salt        TEXT    NOT NULL,
+                         grupo       TEXT    NOT NULL,
+                         email       TEXT
+                     );"
+                cmd.ExecuteNonQuery()
+
+                ' 3. Cria o usuário administrador padrão 'adm' com senha '1111' se a tabela estiver vazia
+                cmd.CommandText = "SELECT COUNT(*) FROM usuarios"
+                Dim count = Convert.ToInt32(cmd.ExecuteScalar())
+                If count = 0 Then
+                    Dim saltVal As String = GerarSalt()
+                    Dim hashVal As String = CalcularHash("1111", saltVal)
+                    cmd.CommandText = "INSERT INTO usuarios (usuario, senha_hash, salt, grupo, email) " &
+                                      "VALUES ('adm', @hash, @salt, 'Administracao', 'admin@sismaster.com')"
+                    cmd.Parameters.Clear()
+                    cmd.Parameters.AddWithValue("@hash", hashVal)
+                    cmd.Parameters.AddWithValue("@salt", saltVal)
+                    cmd.ExecuteNonQuery()
+                End If
             End Using
         End Using
     End Sub
@@ -181,6 +208,148 @@ Public Class DatabaseService
             End Using
         End Using
         Return tabela
+    End Function
+
+    ' --- MÉTODOS DE SEGURANÇA E AUXILIARES ---
+    Public Shared Function GerarSalt() As String
+        Dim bytes(15) As Byte
+        Using rng = System.Security.Cryptography.RandomNumberGenerator.Create()
+            rng.GetBytes(bytes)
+        End Using
+        Return Convert.ToHexString(bytes)
+    End Function
+
+    Public Shared Function CalcularHash(senha As String, salt As String) As String
+        Dim bytesSenha = System.Text.Encoding.UTF8.GetBytes(senha & salt)
+        Using sha = System.Security.Cryptography.SHA256.Create()
+            Dim hashBytes = sha.ComputeHash(bytesSenha)
+            Return Convert.ToHexString(hashBytes)
+        End Using
+    End Function
+
+    ' --- OPERAÇÕES DE BANCO PARA USUÁRIOS ---
+    Public Function BuscarUsuario(usuario As String) As UsuarioDto
+        Using conn = CriarConexao()
+            conn.Open()
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "SELECT id, usuario, senha_hash, salt, grupo, email FROM usuarios WHERE usuario = @user"
+                cmd.Parameters.AddWithValue("@user", usuario)
+                Using reader = cmd.ExecuteReader()
+                    If reader.Read() Then
+                        Dim u As New UsuarioDto With {
+                            .Id = reader.GetInt32(0),
+                            .Usuario = reader.GetString(1),
+                            .SenhaHash = reader.GetString(2),
+                            .Salt = reader.GetString(3),
+                            .Email = If(reader.IsDBNull(5), "", reader.GetString(5))
+                        }
+                        Dim grupoStr = reader.GetString(4)
+                        Dim grupoEnum As GrupoUsuario
+                        If [Enum].TryParse(Of GrupoUsuario)(grupoStr, True, grupoEnum) Then
+                            u.Grupo = grupoEnum
+                        Else
+                            u.Grupo = GrupoUsuario.Operacao
+                        End If
+                        Return u
+                    End If
+                End Using
+            End Using
+        End Using
+        Return Nothing
+    End Function
+
+    Public Function ListarUsuarios() As List(Of UsuarioDto)
+        Dim lista As New List(Of UsuarioDto)()
+        Using conn = CriarConexao()
+            conn.Open()
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "SELECT id, usuario, senha_hash, salt, grupo, email FROM usuarios ORDER BY usuario"
+                Using reader = cmd.ExecuteReader()
+                    While reader.Read()
+                        Dim u As New UsuarioDto With {
+                            .Id = reader.GetInt32(0),
+                            .Usuario = reader.GetString(1),
+                            .SenhaHash = reader.GetString(2),
+                            .Salt = reader.GetString(3),
+                            .Email = If(reader.IsDBNull(5), "", reader.GetString(5))
+                        }
+                        Dim grupoStr = reader.GetString(4)
+                        Dim grupoEnum As GrupoUsuario
+                        If [Enum].TryParse(Of GrupoUsuario)(grupoStr, True, grupoEnum) Then
+                            u.Grupo = grupoEnum
+                        Else
+                            u.Grupo = GrupoUsuario.Operacao
+                        End If
+                        lista.Add(u)
+                    End While
+                End Using
+            End Using
+        End Using
+        Return lista
+    End Function
+
+    Public Sub InserirUsuario(user As UsuarioDto)
+        Using conn = CriarConexao()
+            conn.Open()
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "INSERT INTO usuarios (usuario, senha_hash, salt, grupo, email) VALUES (@user, @hash, @salt, @grupo, @email)"
+                cmd.Parameters.AddWithValue("@user", user.Usuario)
+                cmd.Parameters.AddWithValue("@hash", user.SenhaHash)
+                cmd.Parameters.AddWithValue("@salt", user.Salt)
+                cmd.Parameters.AddWithValue("@grupo", user.Grupo.ToString())
+                cmd.Parameters.AddWithValue("@email", If(String.IsNullOrEmpty(user.Email), DBNull.Value, user.Email))
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
+    Public Sub AtualizarUsuarioDados(user As UsuarioDto)
+        Using conn = CriarConexao()
+            conn.Open()
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "UPDATE usuarios SET grupo = @grupo, email = @email WHERE id = @id"
+                cmd.Parameters.AddWithValue("@grupo", user.Grupo.ToString())
+                cmd.Parameters.AddWithValue("@email", If(String.IsNullOrEmpty(user.Email), DBNull.Value, user.Email))
+                cmd.Parameters.AddWithValue("@id", user.Id)
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
+    Public Sub AtualizarUsuarioCompleto(user As UsuarioDto)
+        Using conn = CriarConexao()
+            conn.Open()
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "UPDATE usuarios SET senha_hash = @hash, salt = @salt, grupo = @grupo, email = @email WHERE id = @id"
+                cmd.Parameters.AddWithValue("@hash", user.SenhaHash)
+                cmd.Parameters.AddWithValue("@salt", user.Salt)
+                cmd.Parameters.AddWithValue("@grupo", user.Grupo.ToString())
+                cmd.Parameters.AddWithValue("@email", If(String.IsNullOrEmpty(user.Email), DBNull.Value, user.Email))
+                cmd.Parameters.AddWithValue("@id", user.Id)
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
+    Public Sub ExcluirUsuario(id As Integer)
+        Using conn = CriarConexao()
+            conn.Open()
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "DELETE FROM usuarios WHERE id = @id"
+                cmd.Parameters.AddWithValue("@id", id)
+                cmd.ExecuteNonQuery()
+            End Using
+        End Using
+    End Sub
+
+    Public Function ContarAdministradores() As Integer
+        Using conn = CriarConexao()
+            conn.Open()
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "SELECT COUNT(*) FROM usuarios WHERE grupo = 'Administracao'"
+                Return Convert.ToInt32(cmd.ExecuteScalar())
+            End Using
+        End Using
     End Function
 
     Private Function CriarConexao() As SqliteConnection

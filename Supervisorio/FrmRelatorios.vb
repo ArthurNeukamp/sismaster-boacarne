@@ -21,6 +21,10 @@ Public Class FrmRelatorios
 
         cbSensor.Items.Clear()
         For Each kvp In _config.Sensores.OrderBy(Function(x) x.Value)
+            ' Ocultar todos os sensores FAKE na lista suspensa para todos os usuários usando a faixa de IDs (121 a 127)
+            If kvp.Key >= 121 AndAlso kvp.Key <= 127 Then
+                Continue For
+            End If
             cbSensor.Items.Add(New SensorItem(kvp.Key, kvp.Value))
         Next
         If cbSensor.Items.Count > 0 Then cbSensor.SelectedIndex = 0
@@ -74,7 +78,37 @@ Public Class FrmRelatorios
         Cursor = Cursors.WaitCursor
         Try
             Dim sensor = CType(cbSensor.SelectedItem, SensorItem)
-            Dim dados  = _db.ConsultarSensor(sensor.Id, dtpInicio.Value, dtpFim.Value)
+            Dim dados As DataTable
+
+            ' Se for câmera de 1 a 7 e o grupo logado for Administração, mesclar com FAKE
+            If sensor.Id >= 21 AndAlso sensor.Id <= 27 AndAlso GrupoLogado = GrupoUsuario.Administracao Then
+                Dim dadosNormal = _db.ConsultarSensor(sensor.Id, dtpInicio.Value, dtpFim.Value)
+                Dim dadosFake   = _db.ConsultarSensor(sensor.Id + 100, dtpInicio.Value, dtpFim.Value)
+                
+                Dim dadosMerged = dadosNormal.Clone()
+                Dim dictRows As New System.Collections.Generic.Dictionary(Of String, DataRow)()
+                
+                For Each row As DataRow In dadosNormal.Rows
+                    Dim dh = row("data_hora").ToString()
+                    dictRows(dh) = row
+                Next
+                
+                For Each row As DataRow In dadosFake.Rows
+                    Dim dh = row("data_hora").ToString()
+                    dictRows(dh) = row
+                Next
+                
+                For Each kvp In dictRows.OrderBy(Function(x) x.Key)
+                    Dim newRow = dadosMerged.NewRow()
+                    newRow("data_hora") = kvp.Value("data_hora")
+                    newRow("temperatura") = kvp.Value("temperatura")
+                    dadosMerged.Rows.Add(newRow)
+                Next
+                
+                dados = dadosMerged
+            Else
+                dados = _db.ConsultarSensor(sensor.Id, dtpInicio.Value, dtpFim.Value)
+            End If
             AdicionarColunaFormatada(dados)
             dgvLeituras.DataSource = dados
 

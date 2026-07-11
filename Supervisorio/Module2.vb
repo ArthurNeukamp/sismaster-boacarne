@@ -1,6 +1,11 @@
 Imports FieldTalk.Modbus.Master
 
 Module Module2
+    ' Variáveis globais para controle de sessão de usuário logado
+    Public UsuarioLogado As String = ""
+    Public GrupoLogado As GrupoUsuario = GrupoUsuario.Operacao
+    Public EmailLogado As String = ""
+
     ' Variáveis globais para rastrear o estado da última tentativa de conexão (0=Inicial, 1=Conectado, 2=Desconectado)
     ' Evita repetições e poluição nos arquivos diários de logs.
     Public ConnectionState_Sadema As Integer = 0

@@ -53,6 +53,15 @@ Public Class MainForm
     Private _aquisicao    As AquisicaoService
     Private _frmRelatorio As FrmRelatorios
 
+    ' Elementos do cabeçalho de segurança e relógio
+    Private lblUsuarioAtual As ToolStripLabel
+    Private lblDataHora      As ToolStripLabel
+    Private btnControleUsers As ToolStripButton
+    Private btnSair          As ToolStripButton
+    Private TimerRelogio     As Timer
+    Private btnLogin         As ToolStripButton
+    Private sep3             As ToolStripSeparator
+
     Private Async Sub TimerCLP_Tick(sender As Object, e As EventArgs) Handles TimerCLP.Tick
         TimerCLP.Stop()
 
@@ -488,6 +497,25 @@ Public Class MainForm
     End Sub
 
     Private Sub MainForm_Shown(sender As Object, e As EventArgs) Handles Me.Shown
+        ' 1. Inicializar banco SQLite para poder autenticar usuários
+        Try
+            Dim config = ConfiguracaoApp.Carregar()
+            _db = New DatabaseService(config.CaminhoDb)
+            _db.InicializarBanco()
+        Catch ex As Exception
+            MessageBox.Show("Banco de dados indisponível: " & ex.Message &
+                            Environment.NewLine & "O sistema será encerrado.",
+                            "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Me.Close()
+            Return
+        End Try
+
+        ' 2. Inicializar cabeçalho e relógio de segurança
+        InicializarCabecalhoSeguranca()
+
+        ' 3. Configurar estado inicial deslogado da sessão
+        ConfigurarInterfaceSessao()
+
         varContadorCommFault = 0
         varContadorCommOK = 0
         commOK_Sadema = 0
@@ -528,16 +556,13 @@ Public Class MainForm
         ConectarCLP2()
         ConectarM251()
 
-        ' Inicializar banco SQLite e servico de coleta periodica de temperaturas.
-        ' A coleta so inicia apos o primeiro CLP comunicar com sucesso.
+        ' Inicializar servico de coleta periodica de temperaturas.
         Try
             Dim config = ConfiguracaoApp.Carregar()
-            _db = New DatabaseService(config.CaminhoDb)
-            _db.InicializarBanco()
             _aquisicao = New AquisicaoService(_db, config, Me)
             _aquisicao.Iniciar()
         Catch ex As Exception
-            MessageBox.Show("Banco de dados indisponível: " & ex.Message &
+            MessageBox.Show("Falha ao iniciar o serviço de aquisição: " & ex.Message &
                             Environment.NewLine & "Relatórios não estarão acessíveis.",
                             "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
@@ -2001,6 +2026,7 @@ Public Class MainForm
             Ambientes(varAmbienteAtivo).varHoraDegelo3 = blcGeral3(varST + 12) \ 100
             Ambientes(varAmbienteAtivo).varMinutoDegelo3 = blcGeral3(varST + 12) Mod 100
         End If
+
         Timer_M251.Start()
     End Sub
 
@@ -2220,6 +2246,171 @@ Public Class MainForm
         contador += 1
         If contador >= 1000000000 Then
             contador = 0
+        End If
+    End Sub
+
+    ' --- MÉTODOS DE CONTROLE DE USUÁRIOS E SEGURANÇA NO CABEÇALHO ---
+    Private Sub InicializarCabecalhoSeguranca()
+        ' Configura os itens de segurança alinhados à direita do BarraFerramentasPrincipal
+        lblDataHora = New ToolStripLabel()
+        lblDataHora.Alignment = ToolStripItemAlignment.Right
+        lblDataHora.ForeColor = Color.FromArgb(30, 64, 115) ' brand blue
+        lblDataHora.Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)
+        lblDataHora.Margin = New Padding(5, 0, 10, 0)
+        lblDataHora.Text = DateTime.Now.ToString("dd/MM/yy HH:mm")
+
+        lblUsuarioAtual = New ToolStripLabel()
+        lblUsuarioAtual.Alignment = ToolStripItemAlignment.Right
+        lblUsuarioAtual.Font = New Font("Segoe UI", 9.0F, FontStyle.Bold)
+        lblUsuarioAtual.ForeColor = Color.DimGray
+        lblUsuarioAtual.Margin = New Padding(5, 0, 10, 0)
+        lblUsuarioAtual.Text = "Usuário: Não Identificado"
+
+        btnSair = New ToolStripButton()
+        btnSair.Alignment = ToolStripItemAlignment.Right
+        btnSair.Image = My.Resources.Resources.logout_icon
+        btnSair.ImageTransparentColor = Color.White
+        btnSair.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText
+        btnSair.Text = "Sair"
+        btnSair.ForeColor = Color.Firebrick
+        btnSair.Font = New Font("Segoe UI", 8.0F, FontStyle.Bold)
+        btnSair.TextImageRelation = TextImageRelation.ImageAboveText
+        btnSair.Margin = New Padding(5, 0, 5, 0)
+        btnSair.Visible = False
+        AddHandler btnSair.Click, AddressOf btnSair_Click
+
+        btnLogin = New ToolStripButton()
+        btnLogin.Alignment = ToolStripItemAlignment.Right
+        btnLogin.Image = My.Resources.Resources.usuarios_icon
+        btnLogin.ImageTransparentColor = Color.White
+        btnLogin.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText
+        btnLogin.Text = "Login"
+        btnLogin.ForeColor = Color.FromArgb(30, 64, 115)
+        btnLogin.Font = New Font("Segoe UI", 8.0F, FontStyle.Bold)
+        btnLogin.TextImageRelation = TextImageRelation.ImageAboveText
+        btnLogin.Margin = New Padding(5, 0, 5, 0)
+        btnLogin.Visible = True
+        AddHandler btnLogin.Click, AddressOf btnLogin_Click
+
+        btnControleUsers = New ToolStripButton()
+        btnControleUsers.Alignment = ToolStripItemAlignment.Right
+        btnControleUsers.Image = My.Resources.Resources.usuarios_icon
+        btnControleUsers.ImageTransparentColor = Color.White
+        btnControleUsers.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText
+        btnControleUsers.Text = "Usuários"
+        btnControleUsers.Font = New Font("Segoe UI", 8.0F, FontStyle.Bold)
+        btnControleUsers.TextImageRelation = TextImageRelation.ImageAboveText
+        btnControleUsers.Visible = False
+        btnControleUsers.Margin = New Padding(5, 0, 5, 0)
+        AddHandler btnControleUsers.Click, AddressOf btnControleUsers_Click
+
+        Dim sep1 As New ToolStripSeparator()
+        sep1.Alignment = ToolStripItemAlignment.Right
+        Dim sep2 As New ToolStripSeparator()
+        sep2.Alignment = ToolStripItemAlignment.Right
+        sep3 = New ToolStripSeparator()
+        sep3.Alignment = ToolStripItemAlignment.Right
+        Dim sepLeft As New ToolStripSeparator()
+        sepLeft.Alignment = ToolStripItemAlignment.Right
+
+        ' Adicionar no BarraFerramentasPrincipal (em ordem da direita para esquerda na tela)
+        BarraFerramentasPrincipal.Items.Add(lblDataHora)
+        BarraFerramentasPrincipal.Items.Add(sep1)
+        BarraFerramentasPrincipal.Items.Add(lblUsuarioAtual)
+        BarraFerramentasPrincipal.Items.Add(sep2)
+        BarraFerramentasPrincipal.Items.Add(btnSair)
+        BarraFerramentasPrincipal.Items.Add(btnLogin)
+        BarraFerramentasPrincipal.Items.Add(sep3)
+        BarraFerramentasPrincipal.Items.Add(btnControleUsers)
+        BarraFerramentasPrincipal.Items.Add(sepLeft)
+
+        ' Inicializa o timer do relógio local
+        TimerRelogio = New Timer()
+        TimerRelogio.Interval = 10000 ' 10s is perfect for minutes updates without high CPU ticking
+        AddHandler TimerRelogio.Tick, AddressOf TimerRelogio_Tick
+        TimerRelogio.Start()
+    End Sub
+
+    Private Sub TimerRelogio_Tick(sender As Object, e As EventArgs)
+        lblDataHora.Text = DateTime.Now.ToString("dd/MM/yy HH:mm")
+    End Sub
+
+    Private Function ObterSiglaGrupo(grupo As GrupoUsuario) As String
+        Select Case grupo
+            Case GrupoUsuario.Administracao
+                Return "ADM"
+            Case GrupoUsuario.Manutencao
+                Return "MAN"
+            Case Else
+                Return "OPE"
+        End Select
+    End Function
+
+    Private Function ObterNomeExibicaoGrupo(grupo As GrupoUsuario) As String
+        Select Case grupo
+            Case GrupoUsuario.Administracao
+                Return "Administração"
+            Case GrupoUsuario.Manutencao
+                Return "Manutenção"
+            Case Else
+                Return "Operação"
+        End Select
+    End Function
+
+    Private Sub btnControleUsers_Click(sender As Object, e As EventArgs)
+        If GrupoLogado <> GrupoUsuario.Administracao Then
+            MessageBox.Show("Acesso restrito ao grupo de Administração.", "Controle de Acesso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        Using frm As New FrmControleUsuarios(_db)
+            frm.ShowDialog()
+        End Using
+    End Sub
+
+    Private Sub btnSair_Click(sender As Object, e As EventArgs)
+        Dim confirmResult = MessageBox.Show("Deseja realmente sair e trocar de usuário?", "Sair do Sistema", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+        If confirmResult = DialogResult.Yes Then
+            ' Limpar credenciais globais
+            UsuarioLogado = ""
+            GrupoLogado = GrupoUsuario.Operacao
+            EmailLogado = ""
+
+            ' Atualizar interface para estado deslogado
+            ConfigurarInterfaceSessao()
+        End If
+    End Sub
+
+    Private Sub btnLogin_Click(sender As Object, e As EventArgs)
+        Using loginForm As New FrmLogin(_db)
+            If loginForm.ShowDialog() = DialogResult.OK Then
+                ' Atualizar interface para estado logado
+                ConfigurarInterfaceSessao()
+            End If
+        End Using
+    End Sub
+
+    Private Sub ConfigurarInterfaceSessao()
+        If String.IsNullOrEmpty(UsuarioLogado) Then
+            lblUsuarioAtual.Text = "Usuário: Não Identificado"
+            If btnLogin IsNot Nothing Then btnLogin.Visible = True
+            If btnSair IsNot Nothing Then btnSair.Visible = False
+            If btnControleUsers IsNot Nothing Then btnControleUsers.Visible = False
+            If sep3 IsNot Nothing Then sep3.Visible = False
+            If btnImportarQualidade IsNot Nothing Then btnImportarQualidade.Visible = False
+        Else
+            lblUsuarioAtual.Text = $"Usuário: {UsuarioLogado} [{ObterSiglaGrupo(GrupoLogado)}]"
+            If btnLogin IsNot Nothing Then btnLogin.Visible = False
+            If btnSair IsNot Nothing Then btnSair.Visible = True
+            
+            Dim isAdmin As Boolean = (GrupoLogado = GrupoUsuario.Administracao)
+            If btnControleUsers IsNot Nothing Then btnControleUsers.Visible = isAdmin
+            If sep3 IsNot Nothing Then sep3.Visible = isAdmin
+
+            ' Apenas o grupo de manutenção visualiza o botão de importar excel
+            If btnImportarQualidade IsNot Nothing Then
+                btnImportarQualidade.Visible = (GrupoLogado = GrupoUsuario.Manutencao)
+            End If
         End If
     End Sub
 
