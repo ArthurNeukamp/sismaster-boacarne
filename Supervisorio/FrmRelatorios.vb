@@ -140,6 +140,22 @@ Public Class FrmRelatorios
             btnExportarPDF.FlatAppearance.BorderColor    = _cinzaBotao
             btnExportarPDF.FlatAppearance.MouseOverBackColor = _cinzaBotao
         End If
+
+        Dim sensor = CType(cbSensor.SelectedItem, SensorItem)
+        Dim podeGrafico As Boolean = habilitado AndAlso sensor IsNot Nothing AndAlso sensor.Id >= 21 AndAlso sensor.Id <= 27
+        btnGerarGraficoPDF.Enabled = podeGrafico
+        btnGerarGraficoPDF.Visible = sensor IsNot Nothing AndAlso sensor.Id >= 21 AndAlso sensor.Id <= 27
+        If podeGrafico Then
+            btnGerarGraficoPDF.BackColor                     = _azulPrincipal
+            btnGerarGraficoPDF.ForeColor                     = Color.White
+            btnGerarGraficoPDF.FlatAppearance.BorderColor    = _azulPrincipal
+            btnGerarGraficoPDF.FlatAppearance.MouseOverBackColor = Color.FromArgb(50, 90, 145)
+        Else
+            btnGerarGraficoPDF.BackColor                     = _cinzaBotao
+            btnGerarGraficoPDF.ForeColor                     = _cinzaTexto
+            btnGerarGraficoPDF.FlatAppearance.BorderColor    = _cinzaBotao
+            btnGerarGraficoPDF.FlatAppearance.MouseOverBackColor = _cinzaBotao
+        End If
     End Sub
 
     ' Adiciona coluna data_hora_fmt com a data ja formatada para exibicao no grid.
@@ -181,6 +197,46 @@ Public Class FrmRelatorios
         End Try
     End Sub
 
+    Private Sub btnGerarGraficoPDF_Click(sender As Object, e As EventArgs) Handles btnGerarGraficoPDF.Click
+        If dgvLeituras.RowCount = 0 Then Return
+
+        Dim sensor = CType(cbSensor.SelectedItem, SensorItem)
+        If sensor Is Nothing OrElse sensor.Id < 21 OrElse sensor.Id > 27 Then Return
+
+        ' Resolve ID com base nas permissões de visualização do grupo
+        Dim querySensorId As Integer = sensor.Id
+        If GrupoLogado = GrupoUsuario.Administracao Then
+            querySensorId = sensor.Id + 100
+        End If
+
+        Dim pasta As String = _config.PastaExportacao
+        Dim nomeArquivo As String = "Grafico_Maturacao_" & sensor.Nome & "_" & DateTime.Now.ToString("dd-MM-yyyy_HHmm") & ".pdf"
+        Dim caminhoCompleto As String = System.IO.Path.Combine(pasta, nomeArquivo)
+
+        Cursor = Cursors.WaitCursor
+        Try
+            Dim simSvc As New SimuladorTemperaturaService(_config)
+            simSvc.GerarGraficoPDFExclusivo(querySensorId, sensor.Nome, dtpInicio.Value, dtpFim.Value, _db, caminhoCompleto)
+            Process.Start(New ProcessStartInfo(caminhoCompleto) With {.UseShellExecute = True})
+        Catch ex As Exception
+            MessageBox.Show("Erro ao gerar gráfico PDF: " & ex.Message, "Erro",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error)
+        Finally
+            Cursor = Cursors.Default
+        End Try
+    End Sub
+
+    Private Sub cbSensor_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cbSensor.SelectedIndexChanged
+        Dim sensor = CType(cbSensor.SelectedItem, SensorItem)
+        Dim ehCamara = sensor IsNot Nothing AndAlso sensor.Id >= 21 AndAlso sensor.Id <= 27
+        btnGerarGraficoPDF.Visible = ehCamara
+        
+        ' Limpa o grid e zera o estado até a próxima consulta
+        dgvLeituras.DataSource = Nothing
+        lblTotal.Text = ""
+        AtualizarEstadoBotaoPDF(False)
+    End Sub
+
     Private Sub AplicarEstilo()
         Dim azulClaro   = Color.FromArgb(240, 245, 255)
         Dim azulSelecao = Color.FromArgb(180, 210, 240)
@@ -216,6 +272,12 @@ Public Class FrmRelatorios
         btnExportarPDF.FlatStyle               = FlatStyle.Flat
         btnExportarPDF.Font                    = fonteBold
         btnExportarPDF.FlatAppearance.BorderSize = 0
+
+        ' Botao Gerar Grafico PDF — visual inicial desabilitado
+        btnGerarGraficoPDF.FlatStyle               = FlatStyle.Flat
+        btnGerarGraficoPDF.Font                    = fonteBold
+        btnGerarGraficoPDF.FlatAppearance.BorderSize = 0
+
         AtualizarEstadoBotaoPDF(False)
 
         ' DataGridView

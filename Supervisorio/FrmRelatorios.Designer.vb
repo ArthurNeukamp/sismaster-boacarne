@@ -25,6 +25,7 @@ Partial Class FrmRelatorios
         dtpFim         = New DateTimePicker()
         btnAtualizar   = New Button()
         btnExportarPDF = New Button()
+        btnGerarGraficoPDF = New Button()
         dgvLeituras    = New DataGridView()
         lblTotal       = New Label()
         pnlFiltros     = New Panel()
@@ -35,7 +36,7 @@ Partial Class FrmRelatorios
         ' pnlFiltros
         pnlFiltros.Controls.AddRange(New Control() {
             lblSensor, cbSensor, lblInicio, dtpInicio,
-            lblFim, dtpFim, btnAtualizar, btnExportarPDF})
+            lblFim, dtpFim, btnAtualizar, btnExportarPDF, btnGerarGraficoPDF})
         pnlFiltros.Dock    = DockStyle.Top
         pnlFiltros.Height  = 50
         pnlFiltros.Padding = New Padding(6, 8, 6, 0)
@@ -83,6 +84,12 @@ Partial Class FrmRelatorios
         btnExportarPDF.Text     = "Exportar PDF"
         btnExportarPDF.Enabled  = False
 
+        ' btnGerarGraficoPDF
+        btnGerarGraficoPDF.Location = New Point(876, 9)
+        btnGerarGraficoPDF.Size     = New Size(110, 26)
+        btnGerarGraficoPDF.Text     = "Gerar Gráfico"
+        btnGerarGraficoPDF.Enabled  = False
+
         ' dgvLeituras
         dgvLeituras.AllowUserToAddRows    = False
         dgvLeituras.AllowUserToDeleteRows = False
@@ -121,6 +128,7 @@ Partial Class FrmRelatorios
     Friend WithEvents dtpFim         As DateTimePicker
     Friend WithEvents btnAtualizar   As Button
     Friend WithEvents btnExportarPDF As Button
+    Friend WithEvents btnGerarGraficoPDF As Button
     Friend WithEvents dgvLeituras    As DataGridView
     Friend WithEvents lblTotal       As Label
     Friend WithEvents pnlFiltros     As Panel
