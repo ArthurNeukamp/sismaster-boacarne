@@ -7,7 +7,7 @@
        ColetarSemConexao: true = continua gravando (clp_ok=0) se o CLP perder comunicação. -->
   <BancoDados>
     <CaminhoDb>dados\sensores.db</CaminhoDb>
-    <IntervaloColetaMinutos>10</IntervaloColetaMinutos>
+    <IntervaloColetaMinutos>1</IntervaloColetaMinutos>
     <ColetarSemConexao>true</ColetarSemConexao>
     <RetencaoMeses>12</RetencaoMeses>
   </BancoDados>

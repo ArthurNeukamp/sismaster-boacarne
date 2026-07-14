@@ -36,6 +36,27 @@ Public Class SimuladorTemperaturaService
         End Try
     End Function
 
+    Private Class DefrostRange
+        Public StartTime As DateTime
+        Public DurationMinutes As Integer
+        Public EndTime As DateTime
+        Public CooldownEndTime As DateTime
+        Public TempMin As Double
+        Public TempMax As Double
+        Public PeakTemp As Double
+
+        Public Sub New(start As DateTime, dur As Integer, tMax As Double, rnd As Random)
+            StartTime = start
+            DurationMinutes = dur
+            EndTime = start.AddMinutes(dur)
+            CooldownEndTime = EndTime.AddMinutes(45)
+            TempMin = tMax - 4.0
+            TempMax = tMax
+            ' Temperatura de pico sorteada entre [TempMax - 4.0, TempMax]
+            PeakTemp = tMax - (rnd.NextDouble() * 4.0)
+        End Sub
+    End Class
+
     Public Sub SimularEGerarRelatorios(ciclos As List(Of FrmImportarQualidade.MaturationCycle), db As DatabaseService)
         If ciclos Is Nothing OrElse ciclos.Count = 0 Then Return
 
@@ -48,9 +69,11 @@ Public Class SimuladorTemperaturaService
         Dim pastaDestino = Path.Combine(baseDir, "Gráficos Qualidade", DateTime.Now.ToString("dd-MM-yyyy_HHmmss"))
         Directory.CreateDirectory(pastaDestino)
 
-        For Each cycle In ciclos            ' 1. Calcular horarios do ciclo (janela de 24 horas)
+        For Each cycle In ciclos
+            ' 1. Calcular horarios do ciclo (dinâmico com base no DataFim/HoraFim do Excel)
             Dim inicio = cycle.DataInicio.Date.Add(cycle.HoraInicio)
-            Dim fim = inicio.AddHours(24)
+            Dim fim = cycle.DataFim.Date.Add(cycle.HoraFim)
+            Dim duracaoHoras As Double = (fim - inicio).TotalHours
 
             ' 2. Mapeamento para buscar os timestamps reais do sensor físico correspondente (ID FAKE - 100)
             Dim physicalSensorId As Integer = cycle.SensorId - 100
@@ -77,134 +100,163 @@ Public Class SimuladorTemperaturaService
                 intervalMinutes = 10.0
             End If
 
-            ' Gera a lista completa de timestamps para as 24 horas usando o intervalo detectado
+            ' Gera a lista completa de timestamps para o período usando o intervalo detectado
             Dim timestamps As New List(Of DateTime)()
-            Dim totalMinutos As Double = 24.0 * 60.0
+            Dim totalMinutos As Double = duracaoHoras * 60.0
             Dim totalPassos As Integer = CInt(Math.Floor(totalMinutos / intervalMinutes))
             For i = 0 To totalPassos
                 timestamps.Add(inicio.AddMinutes(i * intervalMinutes))
             Next
 
             ' 3. Gerar pontos de simulacao correspondentes aos timestamps
-            ' Instancia geradora de valores verdadeiramente aleatórios por execução/ciclo
             Dim rnd As New Random()
-
-            ' Parâmetros dinâmicos sorteados para dar personalidade única a esta geração:
-            ' 1. Temperatura Alvo (Média) entre 2.6 °C e 3.4 °C
             Dim targetTemp As Double = 2.6 + (rnd.NextDouble() * 0.8)
-            
-            ' 2. Coeficiente de Inércia (Atrito térmico) entre 0.80 e 0.92
             Dim friction As Double = 0.80 + (rnd.NextDouble() * 0.12)
-            
-            ' 3. Amplitude máxima da velocidade de variação por passo
             Dim maxSpeed As Double = 0.08 * (intervalMinutes / 10.0)
-
-            ' 4. Ruído térmico do vento
             Dim noiseAmplitude As Double = 0.015 * (intervalMinutes / 10.0)
-
-            ' 5. Limites de flutuação seguros baseados na temperatura alvo (garantindo envelope estrito entre 2.0°C e 4.0°C)
             Dim lowerBound As Double = Math.Max(2.0, targetTemp - 0.8)
             Dim upperBound As Double = Math.Min(4.0, targetTemp + 0.8)
-
-            ' 6. Parâmetros dinâmicos do resfriamento para atingir a faixa estável (1h50 a 2h10 obrigatoriamente)
-            ' 1h50 = 1.833h, 2h10 = 2.167h
             Dim coolingDuration As Double = 1.833 + (rnd.NextDouble() * 0.334)
-            ' Atraso inicial de partida entre 6 e 15 minutos (0.10h a 0.25h)
             Dim lagDuration As Double = 0.1 + (rnd.NextDouble() * 0.15)
-            ' Coeficiente de velocidade de queda exponencial
             Dim kFactor As Double = 1.2 + (rnd.NextDouble() * 1.0)
+
+            ' Preparar dados dos degelos para busca rápida no loop de pontos
+            Dim activeDegelos As New List(Of DefrostRange)()
+            If cycle.Degelo1_Data.HasValue AndAlso cycle.Degelo1_Hora.HasValue Then
+                Dim dStart = cycle.Degelo1_Data.Value.Date.Add(cycle.Degelo1_Hora.Value)
+                activeDegelos.Add(New DefrostRange(dStart, cycle.Degelo1_Duracao, cycle.Degelo1_TempMax, rnd))
+            End If
+            If cycle.Degelo2_Data.HasValue AndAlso cycle.Degelo2_Hora.HasValue Then
+                Dim dStart = cycle.Degelo2_Data.Value.Date.Add(cycle.Degelo2_Hora.Value)
+                activeDegelos.Add(New DefrostRange(dStart, cycle.Degelo2_Duracao, cycle.Degelo2_TempMax, rnd))
+            End If
+            If cycle.Degelo3_Data.HasValue AndAlso cycle.Degelo3_Hora.HasValue Then
+                Dim dStart = cycle.Degelo3_Data.Value.Date.Add(cycle.Degelo3_Hora.Value)
+                activeDegelos.Add(New DefrostRange(dStart, cycle.Degelo3_Duracao, cycle.Degelo3_TempMax, rnd))
+            End If
 
             Dim totalPontos As Integer = timestamps.Count - 1
             Dim batch As New List(Of LeituraDto)()
             Dim dates(totalPontos) As Double
             Dim temps(totalPontos) As Double
 
-            ' Variáveis para guardar o estado anterior no processo autoregressivo
             Dim currentTemp As Double = cycle.TempInicial
-            Dim currentVelocity As Double = 0.0 ' Rastreia a velocidade atual da variação térmica
-            Dim wobble As Double = 0.0           ' Acumulador de perturbação ondulatória na queda
-            Dim wobbleVelocity As Double = 0.0   ' Velocidade da perturbação ondulatória
+            Dim currentVelocity As Double = 0.0
+            Dim wobble As Double = 0.0
+            Dim wobbleVelocity As Double = 0.0
 
             For i = 0 To totalPontos
                 Dim ptTime = timestamps(i)
                 Dim t_hours As Double = (ptTime - inicio).TotalHours
 
                 Dim temp As Double
-                If t_hours <= lagDuration Then
-                    ' --- FASE DE INÉRCIA DE PARTIDA ---
-                    ' Temperatura permanece estável ao redor da inicial com leve ruído
-                    Dim noise = (rnd.NextDouble() * 0.2) - 0.1
-                    temp = cycle.TempInicial + noise
-                    currentTemp = temp
-                    currentVelocity = 0.0
-                ElseIf t_hours <= coolingDuration Then
-                    ' --- FASE DE QUEDA EXPONENCIAL COM ONDULAÇÃO (WOBBLE) ---
-                    ' 1. Calcula a rampa teórica de queda exponencial
-                    Dim t_norm As Double = (t_hours - lagDuration) / (coolingDuration - lagDuration)
-                    Dim decay As Double = Math.Exp(-kFactor * t_norm * 3.5)
-                    Dim baseTemp As Double = targetTemp + (cycle.TempInicial - targetTemp) * decay
+                
+                ' Verifica se o timestamp está dentro de um degelo ou do período de cooldown de 45 minutos
+                Dim currentDefrost As DefrostRange = Nothing
+                Dim isCooldown As Boolean = False
 
-                    ' 2. Atualiza a ondulação térmica (wobble) com inércia (escalado pelo intervalo de tempo)
-                    Dim stepScale As Double = intervalMinutes / 10.0
-                    wobbleVelocity = 0.85 * wobbleVelocity + ((rnd.NextDouble() * 0.3) - 0.15) * stepScale
-                    wobble = wobble + wobbleVelocity
+                For Each d In activeDegelos
+                    If ptTime >= d.StartTime AndAlso ptTime <= d.EndTime Then
+                        currentDefrost = d
+                        isCooldown = False
+                        Exit For
+                    ElseIf ptTime > d.EndTime AndAlso ptTime <= d.CooldownEndTime Then
+                        currentDefrost = d
+                        isCooldown = True
+                        Exit For
+                    End If
+                Next
 
-                    ' 3. Amortece e escala a perturbação proporcionalmente à amplitude da queda
-                    Dim wobbleScale As Double = (cycle.TempInicial - targetTemp) * 0.2
-                    Dim dampFactor As Double = Math.Max(0.0, 1.0 - t_norm)
-                    Dim finalWobble As Double = wobble * dampFactor * wobbleScale
+                If currentDefrost IsNot Nothing Then
+                    If Not isCooldown Then
+                        Dim elapsedMinutes = (ptTime - currentDefrost.StartTime).TotalMinutes
+                        Dim progress = elapsedMinutes / currentDefrost.DurationMinutes
+                        Dim peakTemp = currentDefrost.PeakTemp
 
-                    ' 4. Combina a queda teórica, a ondulação e ruído de alta frequência
-                    Dim noise = (rnd.NextDouble() * 0.2) - 0.1
-                    temp = baseTemp + finalWobble + noise
-                    currentTemp = temp
-                    currentVelocity = 0.0
+                        If progress < 0.3 Then
+                            Dim startTempOfDefrost = 3.0
+                            If i > 0 Then startTempOfDefrost = temps(i - 1)
+                            temp = startTempOfDefrost + (peakTemp - startTempOfDefrost) * (progress / 0.3)
+                        Else
+                            temp = peakTemp
+                        End If
+
+                        Dim jitter = (rnd.NextDouble() * 1.0) - 0.5
+                        temp = temp + jitter
+                        temp = Math.Max(currentDefrost.TempMin, Math.Min(currentDefrost.TempMax, temp))
+                        currentTemp = temp
+                        currentVelocity = 0.0
+                    Else
+                        Dim elapsedCooldown = (ptTime - currentDefrost.EndTime).TotalMinutes
+                        Dim progressCooldown = elapsedCooldown / 45.0
+                        Dim decay = Math.Exp(-3.0 * progressCooldown)
+
+                        Dim peakTemp = currentDefrost.PeakTemp
+                        temp = targetTemp + (peakTemp - targetTemp) * decay
+
+                        Dim noise = (rnd.NextDouble() * 0.2) - 0.1
+                        temp = temp + noise
+                        currentTemp = temp
+                        currentVelocity = 0.0
+                    End If
                 Else
-                    ' --- FASE DE ESTABILIZAÇÃO COM INÉRCIA ---
-                    ' 1. Aceleração térmica aleatória (ruído do vento/circulação)
-                    Dim randVal = (rnd.NextDouble() * 2.0) - 1.0
-                    Dim acceleration As Double = randVal * noiseAmplitude
+                    If t_hours <= lagDuration Then
+                        Dim noise = (rnd.NextDouble() * 1.6) - 0.8
+                        temp = cycle.TempInicial + noise
+                        currentTemp = temp
+                        currentVelocity = 0.0
+                    ElseIf t_hours <= coolingDuration Then
+                        Dim t_norm As Double = (t_hours - lagDuration) / (coolingDuration - lagDuration)
+                        Dim decay As Double = Math.Exp(-kFactor * t_norm * 3.5)
+                        Dim baseTemp As Double = targetTemp + (cycle.TempInicial - targetTemp) * decay
 
-                    ' 2. Força de Retorno (Efeito Mola) em direção à temperatura alvo sorteada
-                    Dim springStrength As Double = 0.04 * (intervalMinutes / 10.0)
-                    Dim springForce As Double = (targetTemp - currentTemp) * springStrength
+                        Dim stepScale As Double = intervalMinutes / 10.0
+                        wobbleVelocity = 0.85 * wobbleVelocity + ((rnd.NextDouble() * 0.3) - 0.15) * stepScale
+                        wobble = wobble + wobbleVelocity
 
-                    ' 3. Atualização da Velocidade com Atrito/Inércia
-                    currentVelocity = (friction * currentVelocity) + acceleration + springForce
+                        Dim wobbleScale As Double = (cycle.TempInicial - targetTemp) * 0.2
+                        Dim dampFactor As Double = Math.Max(0.0, 1.0 - t_norm)
+                        Dim finalWobble As Double = wobble * dampFactor * wobbleScale
 
-                    ' 4. Limitador de Velocidade para evitar picos abruptos
-                    currentVelocity = Math.Max(-maxSpeed, Math.Min(maxSpeed, currentVelocity))
+                        Dim noise = (rnd.NextDouble() * 2.0) - 1.0
+                        temp = baseTemp + finalWobble + noise
+                        currentTemp = temp
+                        currentVelocity = 0.0
+                    Else
+                        Dim randVal = (rnd.NextDouble() * 2.0) - 1.0
+                        Dim acceleration As Double = randVal * noiseAmplitude
 
-                    ' 5. Aplicação da velocidade acumulada
-                    currentTemp = currentTemp + currentVelocity
+                        Dim springStrength As Double = 0.04 * (intervalMinutes / 10.0)
+                        Dim springForce As Double = (targetTemp - currentTemp) * springStrength
 
-                    ' 6. Limitador de Segurança (Segurança em torno do alvo sorteado)
-                    If currentTemp > upperBound Then
-                        currentTemp = upperBound
-                        currentVelocity = -Math.Abs(currentVelocity) * 0.5
-                    ElseIf currentTemp < lowerBound Then
-                        currentTemp = lowerBound
-                        currentVelocity = Math.Abs(currentVelocity) * 0.5
+                        currentVelocity = (friction * currentVelocity) + acceleration + springForce
+                        currentVelocity = Math.Max(-maxSpeed, Math.Min(maxSpeed, currentVelocity))
+
+                        currentTemp = currentTemp + currentVelocity
+
+                        If currentTemp > upperBound Then
+                            currentTemp = upperBound
+                            currentVelocity = -Math.Abs(currentVelocity) * 0.5
+                        ElseIf currentTemp < lowerBound Then
+                            currentTemp = lowerBound
+                            currentVelocity = Math.Abs(currentVelocity) * 0.5
+                        End If
+
+                        temp = currentTemp
                     End If
 
-                    temp = currentTemp
-                End If
+                    If t_hours > coolingDuration Then
+                        Dim jitter As Double = (rnd.NextDouble() * 2.0) - 1.0
+                        temp = temp + jitter
+                    End If
 
-                ' No período estabilizado, aplica uma perturbação aleatória adicional (jitter) de até +-1.0°C
-                ' sobre o valor físico calculado, para simular oscilações e leituras ruidosas mais acentuadas
-                If t_hours > coolingDuration Then
-                    Dim jitter As Double = (rnd.NextDouble() * 2.0) - 1.0
-                    temp = temp + jitter
+                    If t_hours > coolingDuration Then
+                        temp = Math.Max(2.0, Math.Min(4.0, temp))
+                    End If
                 End If
 
                 Dim tempArredondada = Math.Round(temp, 1)
-                
-                ' Garantia absoluta pós-cálculo para o período estabilizado: limites rígidos [2.0, 4.0] °C
-                If t_hours > coolingDuration Then
-                    tempArredondada = Math.Max(2.0, Math.Min(4.0, tempArredondada))
-                End If
 
-                ' Adiciona para insert/upsert no banco
                 batch.Add(New LeituraDto With {
                     .DataHora = ptTime,
                     .SensorId = cycle.SensorId,
@@ -213,144 +265,141 @@ Public Class SimuladorTemperaturaService
                     .ClpOk = True
                 })
 
-                ' Guarda para ScottPlot
                 dates(i) = ptTime.ToOADate()
                 temps(i) = tempArredondada
             Next
 
-            ' 4. Salvar ou atualizar lote no banco (Upsert)
+            db.LimparPeriodoSensor(cycle.SensorId, inicio, fim)
             db.UpsertLeituras(batch)
 
-            ' Calcular estatisticas para exibir no relatorio
-            Dim tempMin = temps.Min()
-            Dim tempMax = temps.Max()
-            Dim tempMed = temps.Average()
+            Dim dadosSalvos = db.ConsultarSensor(cycle.SensorId, inicio, fim)
+            Dim totalPontosSalvos = dadosSalvos.Rows.Count
+            
+            Dim datesSalvas(totalPontosSalvos - 1) As Double
+            Dim tempsSalvas(totalPontosSalvos - 1) As Double
+            For idx = 0 To totalPontosSalvos - 1
+                Dim row = dadosSalvos.Rows(idx)
+                Dim dh As DateTime = Convert.ToDateTime(row("data_hora"))
+                datesSalvas(idx) = dh.ToOADate()
+                tempsSalvas(idx) = Convert.ToDouble(row("temperatura"))
+            Next
 
-            ' 5. Desenhar grafico com ScottPlot
-            Dim plt As New ScottPlot.Plot(1000, 420)
+            Dim tempMin = tempsSalvas.Min()
+            Dim tempMax = tempsSalvas.Max()
+            Dim tempMed = tempsSalvas.Average()
+
+            Dim plt As New ScottPlot.Plot(2500, 1050)
             
-            plt.Title($"GRÁFICO DE MATURAÇÃO - {cycle.Camara}", size:=13.0F, color:=System.Drawing.Color.FromArgb(30, 64, 115))
-            plt.XLabel("Horário de Coleta")
-            plt.YLabel("Temperatura (°C)")
+            Dim nSensor = cycle.Camara.Trim()
+            plt.Title($"GRÁFICO DE MATURAÇÃO - {nSensor.ToUpper()}", size:=30, color:=System.Drawing.Color.FromArgb(30, 64, 115), bold:=True)
             
-            Dim scatter = plt.AddScatter(dates, temps, color:=System.Drawing.Color.FromArgb(30, 64, 115), lineWidth:=2)
-            scatter.MarkerSize = 0 ' Sem marcadores para visual elegante
+            plt.AddScatter(datesSalvas, tempsSalvas, color:=System.Drawing.Color.FromArgb(30, 64, 115), lineWidth:=5, markerSize:=0)
             
-            ' Configura ticks customizados de hora em hora (25 divisões)
-            Dim tickCount As Integer = 25
+            Dim stepHours As Double = 1.0
+            Dim tickCount As Integer = CInt(Math.Floor(duracaoHoras / stepHours)) + 1
             Dim tickPositions(tickCount - 1) As Double
             Dim tickLabels(tickCount - 1) As String
             For k = 0 To tickCount - 1
-                Dim fraction As Double = k / (tickCount - 1)
-                Dim tickTime = inicio.AddHours(24.0 * fraction)
+                Dim tickTime = inicio.AddHours(k * stepHours)
                 tickPositions(k) = tickTime.ToOADate()
                 tickLabels(k) = tickTime.ToString("dd/MM/yyyy HH:mm")
             Next
             
             plt.XTicks(tickPositions, tickLabels)
-            plt.XAxis.TickLabelStyle(rotation:=45)
-            plt.SetAxisLimitsX(dates(0), dates(totalPontos))
-            plt.Margins(x:=0, y:=0.1) ' Margem X zerada para tocar o eixo Y; Margem Y de 10% para respirar no topo/fundo
+            plt.XAxis.TickLabelStyle(rotation:=45, fontSize:=15.0F)
+            plt.SetAxisLimitsX(datesSalvas(0), datesSalvas(totalPontosSalvos - 1))
+            plt.Margins(x:=0, y:=0.1)
 
-            ' Configura ticks customizados para o eixo Y de 2°C em 2°C iniciando em 0°C
             Dim yTickPositions As New System.Collections.Generic.List(Of Double)()
             Dim yTickLabels As New System.Collections.Generic.List(Of String)()
-            Dim maxLimit As Integer = CInt(Math.Ceiling(Math.Max(cycle.TempInicial, 4.0) / 2.0) * 2.0) + 2
+            Dim maxLimit As Integer = CInt(Math.Ceiling(Math.Max(tempsSalvas.Max(), 4.0) / 2.0) * 2.0) + 2
             For yVal = 0 To maxLimit Step 2
                 yTickPositions.Add(yVal)
                 yTickLabels.Add(yVal.ToString() & " °C")
             Next
             plt.YTicks(yTickPositions.ToArray(), yTickLabels.ToArray())
+            plt.YAxis.TickLabelStyle(fontSize:=16.0F)
             plt.SetAxisLimitsY(0, maxLimit)
-            plt.Layout(left:=100, bottom:=60)
+            plt.Layout(left:=220, bottom:=160)
             plt.Grid(True, color:=System.Drawing.Color.FromArgb(235, 235, 235))
-
-            ' Salva em imagem temporaria
+            
             Dim tempPngPath = Path.Combine(Path.GetTempPath(), $"temp_chart_{Guid.NewGuid().ToString()}.png")
             plt.SaveFig(tempPngPath)
 
-            ' 6. Renderizar PDF com QuestPDF (A4 Paisagem)
-            Dim nSensor = cycle.Camara
-            Dim cfg = _config
-            Dim dtIni = inicio
-            Dim dtFim = fim
-
-            ' Escapa nome da camara para o arquivo
             Dim nomeArquivo = $"Grafico_{cycle.Camara.Replace(" ", "")}_{inicio.ToString("dd-MM-yyyy_HHmm")}.pdf"
             Dim caminhoPdf = Path.Combine(pastaDestino, nomeArquivo)
 
             Try
+                Dim nomeCliente = If(String.IsNullOrWhiteSpace(_config.NomeCliente), "FRIGORÍFICO BOA CARNE", _config.NomeCliente.ToUpper())
+                Dim subCabecalho = _config.NomeInstalacao
+                If Not String.IsNullOrEmpty(subCabecalho) AndAlso Not subCabecalho.Contains("SIF 5125") Then
+                    subCabecalho &= " - SIF 5125"
+                ElseIf String.IsNullOrEmpty(subCabecalho) Then
+                    subCabecalho = "FRIGORÍFICO BOA CARNE - SIF 5125"
+                End If
+
+                Dim logoBytes = ObterLogoBytes()
+
                 Document.Create(Sub(container)
-                                    container.Page(Sub(page)
-                                                       page.Size(PageSizes.A4.Landscape())
-                                                       page.Margin(1.2, Unit.Centimetre)
-                                                       page.DefaultTextStyle(Function(x) x.FontSize(8.5).FontFamily("Arial"))
+                    container.Page(Sub(page)
+                        page.Size(PageSizes.A4.Landscape())
+                        page.Margin(1.2, Unit.Centimetre)
+                        page.PageColor(Colors.White)
+                        page.DefaultTextStyle(Function(x) x.FontSize(8.5).FontFamily("Arial"))
+                        
+                        ' Cabeçalho
+                        page.Header().Column(Sub(colHeader)
+                            colHeader.Item().Row(Sub(row)
+                                If logoBytes IsNot Nothing Then
+                                    row.ConstantItem(2.5, Unit.Centimetre).Image(logoBytes)
+                                    row.ConstantItem(0.4, Unit.Centimetre)
+                                ElseIf File.Exists(_config.LogoPath) Then
+                                    row.ConstantItem(2.5, Unit.Centimetre).Image(_config.LogoPath)
+                                    row.ConstantItem(0.4, Unit.Centimetre)
+                                End If
 
-                                                       ' Cabeçalho
-                                                       page.Header().Column(Sub(col)
-                                                                                col.Item().Row(Sub(row)
-                                                                                                   Dim logoBytes = ObterLogoBytes()
-                                                                                                   If logoBytes IsNot Nothing Then
-                                                                                                       row.ConstantItem(2.5, Unit.Centimetre).Image(logoBytes)
-                                                                                                       row.ConstantItem(0.4, Unit.Centimetre)
-                                                                                                   ElseIf File.Exists(cfg.LogoPath) Then
-                                                                                                       row.ConstantItem(2.5, Unit.Centimetre).Image(cfg.LogoPath)
-                                                                                                       row.ConstantItem(0.4, Unit.Centimetre)
-                                                                                                   End If
+                                row.RelativeItem().Column(Sub(c)
+                                    c.Item().Text(nomeCliente).FontSize(13).Bold().FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+                                    c.Item().Text(subCabecalho).FontSize(9).FontColor(Colors.Grey.Darken2)
+                                End Sub)
 
-                                                                                                   row.RelativeItem().Column(Sub(c)
-                                                                                                                                 c.Item().Text(cfg.NomeCliente) _
-                                     .FontSize(13).Bold().FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+                                row.ConstantItem(5.5, Unit.Centimetre).Column(Sub(c)
+                                    c.Item().Text($"Câmara: {nSensor}").Bold()
+                                    c.Item().Text($"Início: {inicio.ToString("dd/MM/yyyy HH:mm")}")
+                                    c.Item().Text($"Fim: {fim.ToString("dd/MM/yyyy HH:mm")}")
+                                End Sub)
+                            End Sub)
+                            colHeader.Item().PaddingTop(4).LineHorizontal(1).LineColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+                        End Sub)
 
-                                                                                                                                 Dim instName As String = cfg.NomeInstalacao
-                                                                                                                                 If Not instName.Contains("SIF 5125") Then
-                                                                                                                                     instName &= " - SIF 5125"
-                                                                                                                                 End If
+                        ' Conteúdo vertical
+                        page.Content().PaddingVertical(5).Column(Sub(col)
+                            col.Item().Row(Sub(row)
+                                row.RelativeItem().Image(tempPngPath)
+                            End Sub)
 
-                                                                                                                                 c.Item().Text(instName) _
-                                     .FontSize(9).FontColor(Colors.Grey.Darken2)
-                                                                                                                             End Sub)
+                            col.Item().PaddingTop(8)
 
-                                                                                                   row.ConstantItem(5.5, Unit.Centimetre).Column(Sub(c)
-                                                                                                                                                     c.Item().Text($"Câmara: {nSensor}").Bold()
-                                                                                                                                                     c.Item().Text($"Início: {dtIni.ToString("dd/MM/yyyy HH:mm")}")
-                                                                                                                                                     c.Item().Text($"Fim: {dtFim.ToString("dd/MM/yyyy HH:mm")}")
-                                                                                                                                                 End Sub)
-                                                                                               End Sub)
-                                                                                col.Item().PaddingTop(4).LineHorizontal(1).LineColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
-                                                                            End Sub)
+                            col.Item().Row(Sub(row)
+                                row.RelativeItem().Column(Sub(c)
+                                    c.Item().PaddingBottom(2).Text("Métricas da Maturação").Bold().FontSize(9.0).FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+                                    
+                                    c.Item().Table(Sub(tbl)
+                                        tbl.ColumnsDefinition(Sub(cols)
+                                            cols.RelativeColumn(3.0F)
+                                            cols.RelativeColumn(1.5F)
+                                        End Sub)
 
-                                                       ' Conteúdo em layout vertical (Gráfico no topo, métricas na base)
-                                                       page.Content().PaddingVertical(5).Column(Sub(col)
-                                                                                                    ' 1. Gráfico em largura total
-                                                                                                    col.Item().Row(Sub(row)
-                                                                                                                       row.RelativeItem().Image(tempPngPath)
-                                                                                                                   End Sub)
-
-                                                                                                    col.Item().PaddingTop(8)
-
-                                                                                                    ' 2. Métricas na base (card de status removido)
-                                                                                                    col.Item().Row(Sub(row)
-                                                                                                                       ' Tabela de Métricas (Preenchendo a área inferior central)
-                                                                                                                       row.RelativeItem().Column(Sub(c)
-                                                                                                                                                     c.Item().PaddingBottom(2).Text("Métricas da Maturação").Bold().FontSize(9.0).FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
-
-                                                                                                                                                     c.Item().Table(Sub(tbl)
-                                                                                                                                                                        tbl.ColumnsDefinition(Sub(cols)
-                                                                                                                                                                                                  cols.RelativeColumn(3.0F)
-                                                                                                                                                                                                  cols.RelativeColumn(1.5F)
-                                                                                                                                                                                              End Sub)
-
-                                                                                                                                                                        AddTableCell(tbl, "Câmara", nSensor, True)
-                                                                                                                                                                        AddTableCell(tbl, "Data de Início", cycle.DataInicio.ToString("dd/MM/yyyy"), False)
-                                                                                                                                                                        AddTableCell(tbl, "Hora de Início", cycle.HoraInicio.ToString("hh\:mm"), True)
-                                                                                                                                                                        AddTableCell(tbl, "Temp. Inicial", cycle.TempInicial.ToString("F1") & " °C", False)
-                                                                                                                                                                        AddTableCell(tbl, "Temp. Mínima", tempMin.ToString("F1") & " °C", True)
-                                                                                                                                                                        AddTableCell(tbl, "Temp. Máxima", tempMax.ToString("F1") & " °C", False)
-                                                                                                                                                                        AddTableCell(tbl, "Temp. Média", tempMed.ToString("F1") & " °C", True)
-                                                                                                                                                                    End Sub)
-                                                                                                                                                 End Sub)
-                                                                                                                   End Sub)
+                                        AddTableCell(tbl, "Câmara", nSensor, True)
+                                        AddTableCell(tbl, "Data de Início", cycle.DataInicio.ToString("dd/MM/yyyy"), False)
+                                        AddTableCell(tbl, "Hora de Início", cycle.HoraInicio.ToString("hh\:mm"), True)
+                                        AddTableCell(tbl, "Temp. Inicial", cycle.TempInicial.ToString("F1") & " °C", False)
+                                        AddTableCell(tbl, "Temp. Mínima", tempMin.ToString("F1") & " °C", True)
+                                        AddTableCell(tbl, "Temp. Máxima", tempMax.ToString("F1") & " °C", False)
+                                        AddTableCell(tbl, "Temp. Média", tempMed.ToString("F1") & " °C", True)
+                                    End Sub)
+                                End Sub)
+                            End Sub)
                         End Sub)
 
                         ' Rodapé
@@ -370,8 +419,29 @@ Public Class SimuladorTemperaturaService
                     End Sub)
                 End Sub).GeneratePdf(caminhoPdf)
 
+                ' --- 6.1. GERAR RELATÓRIO PADRÃO POR LISTA NA MESMA PASTA ---
+                Try
+                    Dim dadosRelatorio As New DataTable()
+                    dadosRelatorio.Columns.Add("data_hora_fmt", GetType(String))
+                    dadosRelatorio.Columns.Add("temperatura", GetType(Double))
+
+                    For Each row As DataRow In dadosSalvos.Rows
+                        Dim dr = dadosRelatorio.NewRow()
+                        Dim dh As DateTime = Convert.ToDateTime(row("data_hora"))
+                        dr("data_hora_fmt") = dh.ToString("dd/MM/yyyy HH:mm:ss")
+                        dr("temperatura") = Convert.ToDouble(row("temperatura"))
+                        dadosRelatorio.Rows.Add(dr)
+                    Next
+
+                    Dim relService As New RelatorioService(_config)
+                    Dim nomeArquivoList = $"Relatorio_{cycle.Camara.Replace(" ", "")}_{inicio.ToString("dd-MM-yyyy_HHmm")}.pdf"
+                    Dim caminhoListPdf = Path.Combine(pastaDestino, nomeArquivoList)
+                    relService.ExportarPDF(dadosRelatorio, caminhoListPdf, cycle.Camara, inicio, fim)
+                Catch ex As Exception
+                    LogService.GravarErro("SIMULADOR", $"Erro ao exportar relatório por lista para câmara {cycle.Camara}: {ex.Message}")
+                End Try
+
             Catch ex As Exception
-                ' Se falhar a geracao de algum PDF especifico, loga e continua
                 LogService.GravarErro("SIMULADOR", $"Erro ao gerar PDF '{nomeArquivo}': {ex.Message}")
             Finally
                 ' Limpeza da imagem temporaria

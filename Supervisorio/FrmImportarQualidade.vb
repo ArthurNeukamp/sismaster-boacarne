@@ -14,6 +14,23 @@ Public Class FrmImportarQualidade
         Public Property DataInicio As DateTime
         Public Property HoraInicio As TimeSpan
         Public Property TempInicial As Double
+        Public Property DataFim As DateTime
+        Public Property HoraFim As TimeSpan
+        
+        Public Property Degelo1_Data As DateTime?
+        Public Property Degelo1_Hora As TimeSpan?
+        Public Property Degelo1_Duracao As Integer
+        Public Property Degelo1_TempMax As Double
+        
+        Public Property Degelo2_Data As DateTime?
+        Public Property Degelo2_Hora As TimeSpan?
+        Public Property Degelo2_Duracao As Integer
+        Public Property Degelo2_TempMax As Double
+        
+        Public Property Degelo3_Data As DateTime?
+        Public Property Degelo3_Hora As TimeSpan?
+        Public Property Degelo3_Duracao As Integer
+        Public Property Degelo3_TempMax As Double
     End Class
 
     Public Sub New(caminhoArquivo As String, db As DatabaseService)
@@ -60,10 +77,79 @@ Public Class FrmImportarQualidade
         End Select
     End Function
 
+    Private Function ParseDateTimeCell(cell As ClosedXML.Excel.IXLCell, culture As System.Globalization.CultureInfo) As DateTime?
+        If cell.IsEmpty() Then Return Nothing
+        Try
+            If cell.DataType = ClosedXML.Excel.XLDataType.DateTime Then
+                Return cell.GetDateTime()
+            Else
+                Dim dblVal As Double
+                If Double.TryParse(cell.GetString(), System.Globalization.NumberStyles.Any, culture, dblVal) Then
+                    Return DateTime.FromOADate(dblVal)
+                Else
+                    Dim dt As DateTime
+                    If DateTime.TryParse(cell.GetString(), culture, System.Globalization.DateTimeStyles.None, dt) Then
+                        Return dt
+                    End If
+                End If
+            End If
+        Catch
+        End Try
+        Return Nothing
+    End Function
+
+    Private Function ParseTimeSpanCell(cell As ClosedXML.Excel.IXLCell, culture As System.Globalization.CultureInfo) As TimeSpan?
+        If cell.IsEmpty() Then Return Nothing
+        Try
+            If cell.DataType = ClosedXML.Excel.XLDataType.TimeSpan Then
+                Return cell.GetTimeSpan()
+            ElseIf cell.DataType = ClosedXML.Excel.XLDataType.DateTime Then
+                Return cell.GetDateTime().TimeOfDay
+            Else
+                Dim dblVal As Double
+                If Double.TryParse(cell.GetString(), System.Globalization.NumberStyles.Any, culture, dblVal) Then
+                    If dblVal >= 0 AndAlso dblVal < 1.0 Then
+                        Return TimeSpan.FromDays(dblVal)
+                    End If
+                Else
+                    Dim ts As TimeSpan
+                    If TimeSpan.TryParse(cell.GetString(), ts) Then
+                        Return ts
+                    End If
+                End If
+            End If
+        Catch
+        End Try
+        Return Nothing
+    End Function
+
+    Private Function ParseDoubleCell(cell As ClosedXML.Excel.IXLCell, culture As System.Globalization.CultureInfo) As Double?
+        If cell.IsEmpty() Then Return Nothing
+        Try
+            If cell.DataType = ClosedXML.Excel.XLDataType.Number Then
+                Return cell.GetDouble()
+            Else
+                Dim strVal As String = cell.GetString().Replace(".", ",").Trim()
+                Dim dblVal As Double
+                If Double.TryParse(strVal, System.Globalization.NumberStyles.Any, culture, dblVal) Then
+                    Return dblVal
+                End If
+            End If
+        Catch
+        End Try
+        Return Nothing
+    End Function
+
+    Private Function ParseIntCell(cell As ClosedXML.Excel.IXLCell, culture As System.Globalization.CultureInfo) As Integer?
+        Dim dbl = ParseDoubleCell(cell, culture)
+        If dbl.HasValue Then Return CInt(dbl.Value)
+        Return Nothing
+    End Function
+
     Private Sub CarregarPlanilha(caminhoArquivo As String)
         Dim ciclos As New List(Of MaturationCycle)()
         Dim alertas As New List(Of String)()
-        Dim ciclosAceitos As New Dictionary(Of Integer, List(Of DateTime))()
+        Dim ciclosAceitos As New Dictionary(Of Integer, List(Of Tuple(Of DateTime, DateTime)))()
         Dim cultureInfo As New System.Globalization.CultureInfo("pt-BR")
 
         Try
@@ -96,129 +182,170 @@ Public Class FrmImportarQualidade
                     Dim câmara As String = row.Cell(1).GetString().Trim()
                     Dim sensorId As Integer = ObterSensorId(câmara)
 
-                    Dim dataInicio As DateTime
-                    Dim horaInicio As TimeSpan
-                    Dim tempInicial As Double
-
-                    ' 1. Validar Câmara
                     If sensorId = -1 Then
                         erroLinha &= "Câmara não reconhecida ('" & câmara & "'). "
                     End If
 
-                    ' 2. Validar Data
-                    Dim cellDate = row.Cell(2)
-                    Dim dataValida As Boolean = False
-                    If Not cellDate.IsEmpty() Then
-                        Try
-                            If cellDate.DataType = ClosedXML.Excel.XLDataType.DateTime Then
-                                dataInicio = cellDate.GetDateTime()
-                                dataValida = True
-                            Else
-                                ' Tenta ler como número (serial do Excel)
-                                Dim dblVal As Double
-                                If Double.TryParse(cellDate.GetString(), System.Globalization.NumberStyles.Any, cultureInfo, dblVal) Then
-                                    dataInicio = DateTime.FromOADate(dblVal)
-                                    dataValida = True
-                                Else
-                                    ' Tenta parsing normal de string
-                                    If DateTime.TryParse(cellDate.GetString(), cultureInfo, System.Globalization.DateTimeStyles.None, dataInicio) Then
-                                        dataValida = True
-                                    End If
-                                End If
-                            End If
+                    ' Ler Data e Hora Início
+                    Dim dIniOpt = ParseDateTimeCell(row.Cell(2), cultureInfo)
+                    Dim hIniOpt = ParseTimeSpanCell(row.Cell(3), cultureInfo)
+                    Dim tIniOpt = ParseDoubleCell(row.Cell(4), cultureInfo)
 
-                            If dataValida AndAlso dataInicio.Year < 2000 Then
-                                erroLinha &= "Data muito antiga (deve ser posterior ao ano 2000). "
-                                dataValida = False
-                            End If
-                        Catch ex As Exception
-                            erroLinha &= "Formato de data inválido. "
-                        End Try
+                    Dim dataInicio As DateTime
+                    Dim horaInicio As TimeSpan
+                    Dim tempInicial As Double
+
+                    If dIniOpt.HasValue Then
+                        dataInicio = dIniOpt.Value
+                        If dataInicio.Year < 2000 Then
+                            erroLinha &= "Data de início muito antiga (deve ser posterior ao ano 2000). "
+                        End If
                     Else
-                        erroLinha &= "Data de início vazia. "
+                        erroLinha &= "Data de início vazia ou inválida. "
                     End If
 
-                    ' 3. Validar Hora
-                    Dim cellTime = row.Cell(3)
-                    Dim horaValida As Boolean = False
-                    If Not cellTime.IsEmpty() Then
-                        Try
-                            If cellTime.DataType = ClosedXML.Excel.XLDataType.TimeSpan Then
-                                horaInicio = cellTime.GetTimeSpan()
-                                horaValida = True
-                            ElseIf cellTime.DataType = ClosedXML.Excel.XLDataType.DateTime Then
-                                horaInicio = cellTime.GetDateTime().TimeOfDay
-                                horaValida = True
-                            Else
-                                ' Tenta ler como número decimal (fração do dia)
-                                Dim dblVal As Double
-                                If Double.TryParse(cellTime.GetString(), System.Globalization.NumberStyles.Any, cultureInfo, dblVal) Then
-                                    If dblVal >= 0 AndAlso dblVal < 1.0 Then
-                                        horaInicio = TimeSpan.FromDays(dblVal)
-                                        horaValida = True
-                                    Else
-                                        erroLinha &= "Hora fora do limite (deve ser entre 00:00 e 23:59). "
-                                    End If
-                                Else
-                                    ' Tenta parsing de string
-                                    If TimeSpan.TryParse(cellTime.GetString(), horaInicio) Then
-                                        horaValida = True
-                                    End If
-                                End If
-                            End If
-                        Catch ex As Exception
-                            erroLinha &= "Formato de hora inválido. "
-                        End Try
+                    If hIniOpt.HasValue Then
+                        horaInicio = hIniOpt.Value
                     Else
-                        erroLinha &= "Hora de início vazia. "
+                        erroLinha &= "Hora de início vazia ou inválida. "
                     End If
 
-                    ' 4. Validar Temperatura
-                    Dim cellTemp = row.Cell(4)
-                    Dim tempValida As Boolean = False
-                    If Not cellTemp.IsEmpty() Then
-                        Try
-                            If cellTemp.DataType = ClosedXML.Excel.XLDataType.Number Then
-                                tempInicial = cellTemp.GetDouble()
-                                tempValida = True
-                            Else
-                                ' Trata decimal localizado (vírgula vs ponto)
-                                Dim strTemp As String = cellTemp.GetString().Replace(".", ",")
-                                If Double.TryParse(strTemp, System.Globalization.NumberStyles.Any, cultureInfo, tempInicial) Then
-                                    tempValida = True
-                                End If
-                            End If
-                        Catch ex As Exception
-                            erroLinha &= "Formato de temperatura inválido. "
-                        End Try
+                    If tIniOpt.HasValue Then
+                        tempInicial = tIniOpt.Value
                     Else
-                        erroLinha &= "Temperatura inicial vazia. "
+                        erroLinha &= "Temperatura inicial vazia ou inválida. "
                     End If
 
-                    ' 5. Validar sobreposição de ciclos de 24h para a mesma câmara nesta planilha
+                    ' Ler Data e Hora Fim
+                    Dim dFimOpt = ParseDateTimeCell(row.Cell(5), cultureInfo)
+                    Dim hFimOpt = ParseTimeSpanCell(row.Cell(6), cultureInfo)
+
+                    Dim dataFim As DateTime
+                    Dim horaFim As TimeSpan
+
+                    If dFimOpt.HasValue Then
+                        dataFim = dFimOpt.Value
+                    Else
+                        erroLinha &= "Data de término vazia ou inválida. "
+                    End If
+
+                    If hFimOpt.HasValue Then
+                        horaFim = hFimOpt.Value
+                    Else
+                        erroLinha &= "Hora de término vazia ou inválida. "
+                    End If
+
+                    Dim inicioCiclo As DateTime
+                    Dim fimCiclo As DateTime
+
                     If String.IsNullOrEmpty(erroLinha) Then
-                        Dim inicioCiclo = dataInicio.Date.Add(horaInicio)
+                        inicioCiclo = dataInicio.Date.Add(horaInicio)
+                        fimCiclo = dataFim.Date.Add(horaFim)
+
+                        If fimCiclo <= inicioCiclo Then
+                            erroLinha &= "A data/hora de término deve ser maior que a data/hora de início. "
+                        End If
+                    End If
+
+                    ' Criar ciclo temporário para carregar os degelos
+                    Dim ciclo As New MaturationCycle()
+                    ciclo.RowIndex = linhaAtual
+                    ciclo.Camara = câmara
+                    ciclo.SensorId = sensorId
+                    ciclo.DataInicio = dataInicio
+                    ciclo.HoraInicio = horaInicio
+                    ciclo.TempInicial = tempInicial
+                    If String.IsNullOrEmpty(erroLinha) Then
+                        ciclo.DataFim = dataFim
+                        ciclo.HoraFim = horaFim
+                    End If
+
+                    ' --- LER E VALIDAR DEGELOS ---
+                    ' Degelo 1 (Col G=7 a J=10)
+                    Dim deg1_D = ParseDateTimeCell(row.Cell(7), cultureInfo)
+                    Dim deg1_H = ParseTimeSpanCell(row.Cell(8), cultureInfo)
+                    Dim deg1_Dur = ParseIntCell(row.Cell(9), cultureInfo)
+                    Dim deg1_Max = ParseDoubleCell(row.Cell(10), cultureInfo)
+
+                    If deg1_D.HasValue OrElse deg1_H.HasValue OrElse deg1_Dur.HasValue OrElse deg1_Max.HasValue Then
+                        If Not (deg1_D.HasValue AndAlso deg1_H.HasValue AndAlso deg1_Dur.HasValue AndAlso deg1_Max.HasValue) Then
+                            erroLinha &= "Degelo 1 possui campos incompletos (todos os 4 campos de data, hora, duração e máx devem ser preenchidos). "
+                        Else
+                            Dim dtDeg = deg1_D.Value.Date.Add(deg1_H.Value)
+                            If dtDeg < inicioCiclo Then
+                                erroLinha &= $"Degelo 1 inicia em {dtDeg.ToString("dd/MM/yyyy HH:mm")}, que é anterior ao início do ciclo. "
+                            End If
+                            ciclo.Degelo1_Data = deg1_D
+                            ciclo.Degelo1_Hora = deg1_H
+                            ciclo.Degelo1_Duracao = deg1_Dur.Value
+                            ciclo.Degelo1_TempMax = deg1_Max.Value
+                        End If
+                    End If
+
+                    ' Degelo 2 (Col K=11 a N=14)
+                    Dim deg2_D = ParseDateTimeCell(row.Cell(11), cultureInfo)
+                    Dim deg2_H = ParseTimeSpanCell(row.Cell(12), cultureInfo)
+                    Dim deg2_Dur = ParseIntCell(row.Cell(13), cultureInfo)
+                    Dim deg2_Max = ParseDoubleCell(row.Cell(14), cultureInfo)
+
+                    If deg2_D.HasValue OrElse deg2_H.HasValue OrElse deg2_Dur.HasValue OrElse deg2_Max.HasValue Then
+                        If Not (deg2_D.HasValue AndAlso deg2_H.HasValue AndAlso deg2_Dur.HasValue AndAlso deg2_Max.HasValue) Then
+                            erroLinha &= "Degelo 2 possui campos incompletos. "
+                        Else
+                            Dim dtDeg = deg2_D.Value.Date.Add(deg2_H.Value)
+                            If dtDeg < inicioCiclo Then
+                                erroLinha &= $"Degelo 2 inicia em {dtDeg.ToString("dd/MM/yyyy HH:mm")}, que é anterior ao início do ciclo. "
+                            End If
+                            ciclo.Degelo2_Data = deg2_D
+                            ciclo.Degelo2_Hora = deg2_H
+                            ciclo.Degelo2_Duracao = deg2_Dur.Value
+                            ciclo.Degelo2_TempMax = deg2_Max.Value
+                        End If
+                    End If
+
+                    ' Degelo 3 (Col O=15 a R=18)
+                    Dim deg3_D = ParseDateTimeCell(row.Cell(15), cultureInfo)
+                    Dim deg3_H = ParseTimeSpanCell(row.Cell(16), cultureInfo)
+                    Dim deg3_Dur = ParseIntCell(row.Cell(17), cultureInfo)
+                    Dim deg3_Max = ParseDoubleCell(row.Cell(18), cultureInfo)
+
+                    If deg3_D.HasValue OrElse deg3_H.HasValue OrElse deg3_Dur.HasValue OrElse deg3_Max.HasValue Then
+                        If Not (deg3_D.HasValue AndAlso deg3_H.HasValue AndAlso deg3_Dur.HasValue AndAlso deg3_Max.HasValue) Then
+                            erroLinha &= "Degelo 3 possui campos incompletos. "
+                        Else
+                            Dim dtDeg = deg3_D.Value.Date.Add(deg3_H.Value)
+                            If dtDeg < inicioCiclo Then
+                                erroLinha &= $"Degelo 3 inicia em {dtDeg.ToString("dd/MM/yyyy HH:mm")}, que é anterior ao início do ciclo. "
+                            End If
+                            ciclo.Degelo3_Data = deg3_D
+                            ciclo.Degelo3_Hora = deg3_H
+                            ciclo.Degelo3_Duracao = deg3_Dur.Value
+                            ciclo.Degelo3_TempMax = deg3_Max.Value
+                        End If
+                    End If
+
+                    ' Validar sobreposição de intervalos para a mesma câmara nesta planilha
+                    If String.IsNullOrEmpty(erroLinha) Then
                         Dim conflito As Boolean = False
-                        Dim dtConflito As DateTime = DateTime.MinValue
+                        Dim intConflito As Tuple(Of DateTime, DateTime) = Nothing
 
                         If ciclosAceitos.ContainsKey(sensorId) Then
-                            For Each dt In ciclosAceitos(sensorId)
-                                If Math.Abs((inicioCiclo - dt).TotalHours) < 24.0 Then
+                            For Each interval In ciclosAceitos(sensorId)
+                                If inicioCiclo < interval.Item2 AndAlso fimCiclo > interval.Item1 Then
                                     conflito = True
-                                    dtConflito = dt
+                                    intConflito = interval
                                     Exit For
                                 End If
                             Next
                         End If
 
                         If conflito Then
-                            erroLinha &= $"Conflito de sobreposição. A câmara já possui um ciclo ativo que inicia em {dtConflito.ToString("dd/MM/yyyy HH:mm")} (menos de 24h de intervalo). "
+                            erroLinha &= $"Conflito de sobreposição. A câmara já possui um ciclo ativo entre {intConflito.Item1.ToString("dd/MM/yyyy HH:mm")} e {intConflito.Item2.ToString("dd/MM/yyyy HH:mm")}. "
                         Else
-                            ' Adiciona na lista de aceitos para esta câmara
                             If Not ciclosAceitos.ContainsKey(sensorId) Then
-                                ciclosAceitos(sensorId) = New List(Of DateTime)()
+                                ciclosAceitos(sensorId) = New List(Of Tuple(Of DateTime, DateTime))()
                             End If
-                            ciclosAceitos(sensorId).Add(inicioCiclo)
+                            ciclosAceitos(sensorId).Add(Tuple.Create(inicioCiclo, fimCiclo))
                         End If
                     End If
 
@@ -226,21 +353,11 @@ Public Class FrmImportarQualidade
                     If Not String.IsNullOrEmpty(erroLinha) Then
                         alertas.Add("Linha " & linhaAtual & ": " & erroLinha)
                     Else
-                        ' Registro válido!
-                        Dim ciclo As New MaturationCycle() With {
-                            .RowIndex = linhaAtual,
-                            .Camara = câmara,
-                            .SensorId = sensorId,
-                            .DataInicio = dataInicio,
-                            .HoraInicio = horaInicio,
-                            .TempInicial = tempInicial
-                        }
                         ciclos.Add(ciclo)
                     End If
-                    
+
                     linhaAtual += 1
                 End While
-                
             End Using
             
             ' Preencher o grid com os ciclos válidos
