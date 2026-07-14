@@ -131,7 +131,17 @@ Public Class AquisicaoService
     End Function
 
     Private Function ColetarSnapshot(dataColeta As DateTime) As List(Of LeituraDto)
-        Dim leituras = New List(Of LeituraDto)(_sensorIds.Length)
+        Dim leituras = New List(Of LeituraDto)(_sensorIds.Length * 2)
+
+        Dim dictLimites As New Dictionary(Of Integer, LimiteSensorDto)()
+        Try
+            For Each lim In _db.ObterLimitesSensores()
+                dictLimites(lim.SensorId) = lim
+            Next
+        Catch
+        End Try
+
+        Dim rnd As New Random()
 
         For Each sid In _sensorIds
             Dim nomeConfigurado As String = $"Sensor {sid}"
@@ -147,11 +157,39 @@ Public Class AquisicaoService
                 sensorClpOk = (ConnectionState_M251 = 1)
             End If
 
+            Dim realTemp As Double = _form.Ambientes(sid).varTemperatura / 10.0
+
             leituras.Add(New LeituraDto With {
                 .DataHora = dataColeta,
                 .SensorId = sid,
                 .Nome = nomeConfigurado,
-                .Temperatura = _form.Ambientes(sid).varTemperatura / 10.0,
+                .Temperatura = realTemp,
+                .ClpOk = sensorClpOk
+            })
+
+            ' Verifica se há limites parametrizados e ativos
+            Dim lim As LimiteSensorDto = Nothing
+            Dim fakeTemp As Double = realTemp
+
+            If dictLimites.TryGetValue(sid, lim) AndAlso lim.Habilitado Then
+                Dim emDegelo As Boolean = (_form.Ambientes(sid).varStatusAmbiente > 0)
+
+                If Not emDegelo Then
+                    If realTemp < lim.TempMin Then
+                        ' varia até 1°C para cima
+                        fakeTemp = lim.TempMin + (rnd.NextDouble() * 1.0)
+                    ElseIf realTemp > lim.TempMax Then
+                        ' varia até 1°C para baixo
+                        fakeTemp = lim.TempMax - (rnd.NextDouble() * 1.0)
+                    End If
+                End If
+            End If
+
+            leituras.Add(New LeituraDto With {
+                .DataHora = dataColeta,
+                .SensorId = sid + 100,
+                .Nome = nomeConfigurado,
+                .Temperatura = Math.Round(fakeTemp, 1),
                 .ClpOk = sensorClpOk
             })
         Next

@@ -80,32 +80,36 @@ Public Class FrmRelatorios
             Dim sensor = CType(cbSensor.SelectedItem, SensorItem)
             Dim dados As DataTable
 
-            ' Se for câmera de 1 a 7 e o grupo logado for Administração, mesclar com FAKE
-            If sensor.Id >= 21 AndAlso sensor.Id <= 27 AndAlso GrupoLogado = GrupoUsuario.Administracao Then
+            ' Se o grupo logado for Administração, mesclar com FAKE (+100) se existirem dados fakes
+            If GrupoLogado = GrupoUsuario.Administracao Then
                 Dim dadosNormal = _db.ConsultarSensor(sensor.Id, dtpInicio.Value, dtpFim.Value)
                 Dim dadosFake   = _db.ConsultarSensor(sensor.Id + 100, dtpInicio.Value, dtpFim.Value)
                 
-                Dim dadosMerged = dadosNormal.Clone()
-                Dim dictRows As New System.Collections.Generic.Dictionary(Of String, DataRow)()
-                
-                For Each row As DataRow In dadosNormal.Rows
-                    Dim dh = row("data_hora").ToString()
-                    dictRows(dh) = row
-                Next
-                
-                For Each row As DataRow In dadosFake.Rows
-                    Dim dh = row("data_hora").ToString()
-                    dictRows(dh) = row
-                Next
-                
-                For Each kvp In dictRows.OrderBy(Function(x) x.Key)
-                    Dim newRow = dadosMerged.NewRow()
-                    newRow("data_hora") = kvp.Value("data_hora")
-                    newRow("temperatura") = kvp.Value("temperatura")
-                    dadosMerged.Rows.Add(newRow)
-                Next
-                
-                dados = dadosMerged
+                If dadosFake IsNot Nothing AndAlso dadosFake.Rows.Count > 0 Then
+                    Dim dadosMerged = dadosNormal.Clone()
+                    Dim dictRows As New System.Collections.Generic.Dictionary(Of String, DataRow)()
+                    
+                    For Each row As DataRow In dadosNormal.Rows
+                        Dim dh = row("data_hora").ToString()
+                        dictRows(dh) = row
+                    Next
+                    
+                    For Each row As DataRow In dadosFake.Rows
+                        Dim dh = row("data_hora").ToString()
+                        dictRows(dh) = row
+                    Next
+                    
+                    For Each kvp In dictRows.OrderBy(Function(x) x.Key)
+                        Dim newRow = dadosMerged.NewRow()
+                        newRow("data_hora") = kvp.Value("data_hora")
+                        newRow("temperatura") = kvp.Value("temperatura")
+                        dadosMerged.Rows.Add(newRow)
+                    Next
+                    
+                    dados = dadosMerged
+                Else
+                    dados = dadosNormal
+                End If
             Else
                 dados = _db.ConsultarSensor(sensor.Id, dtpInicio.Value, dtpFim.Value)
             End If

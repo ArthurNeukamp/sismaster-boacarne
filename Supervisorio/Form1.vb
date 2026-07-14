@@ -2398,6 +2398,8 @@ Public Class MainForm
             If btnControleUsers IsNot Nothing Then btnControleUsers.Visible = False
             If sep3 IsNot Nothing Then sep3.Visible = False
             If btnImportarQualidade IsNot Nothing Then btnImportarQualidade.Visible = False
+            If btnLimitesSensores IsNot Nothing Then btnLimitesSensores.Visible = False
+            If ToolStripSeparator7 IsNot Nothing Then ToolStripSeparator7.Visible = False
         Else
             lblUsuarioAtual.Text = $"Usuário: {UsuarioLogado} [{ObterSiglaGrupo(GrupoLogado)}]"
             If btnLogin IsNot Nothing Then btnLogin.Visible = False
@@ -2411,7 +2413,49 @@ Public Class MainForm
             If btnImportarQualidade IsNot Nothing Then
                 btnImportarQualidade.Visible = (GrupoLogado = GrupoUsuario.Manutencao)
             End If
+
+            ' Apenas o grupo de manutenção visualiza o botão de limites de sensores
+            Dim podeLimites As Boolean = (GrupoLogado = GrupoUsuario.Manutencao)
+            If btnLimitesSensores IsNot Nothing Then
+                btnLimitesSensores.Visible = podeLimites
+            End If
+            If ToolStripSeparator7 IsNot Nothing Then
+                ToolStripSeparator7.Visible = podeLimites
+            End If
         End If
+    End Sub
+
+    Private Sub btnLimitesSensores_Click(sender As Object, e As EventArgs) Handles btnLimitesSensores.Click
+        AbrirLimitesSensores()
+    End Sub
+
+    Private Sub AbrirLimitesSensores()
+        If GrupoLogado <> GrupoUsuario.Manutencao Then
+            MessageBox.Show("Acesso restrito ao grupo de Manutenção.", "Controle de Acesso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        ' Fecha outras telas MDIs
+        FrmSADEMA.Close()
+        FrmAmbientes.Close()
+        frmCompressores.Close()
+        frmCamaras.Close()
+        FrmAlaNova.Close()
+        FrmTuneis47.Close()
+        frmTuneisMiudos.Close()
+        frmClimatizacao.Close()
+
+        ' Se já estiver aberta, traz para a frente
+        For Each child In Me.MdiChildren
+            If TypeOf child Is FrmLimitesSensores Then
+                child.Activate()
+                Return
+            End If
+        Next
+
+        Dim frm As New FrmLimitesSensores(_db, ConfiguracaoApp.Carregar())
+        frm.MdiParent = Me
+        frm.Show()
     End Sub
 
 End Class

@@ -44,6 +44,16 @@ Public Class DatabaseService
                      );"
                 cmd.ExecuteNonQuery()
 
+                ' 2.1. Cria a tabela de limites dos sensores
+                cmd.CommandText =
+                    "CREATE TABLE IF NOT EXISTS limites_sensores (
+                         sensor_id   INTEGER PRIMARY KEY,
+                         habilitado  INTEGER NOT NULL DEFAULT 0,
+                         temp_min    REAL NOT NULL DEFAULT 0.0,
+                         temp_max    REAL NOT NULL DEFAULT 0.0
+                     );"
+                cmd.ExecuteNonQuery()
+
                 ' 3. Cria o usuário administrador padrão 'adm' com senha '1111' se a tabela estiver vazia
                 cmd.CommandText = "SELECT COUNT(*) FROM usuarios"
                 Dim count = Convert.ToInt32(cmd.ExecuteScalar())
@@ -351,6 +361,55 @@ Public Class DatabaseService
             End Using
         End Using
     End Function
+
+    Public Function ObterLimitesSensores() As List(Of LimiteSensorDto)
+        Dim lista As New List(Of LimiteSensorDto)()
+        Using conn = CriarConexao()
+            conn.Open()
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "SELECT sensor_id, habilitado, temp_min, temp_max FROM limites_sensores"
+                Using reader = cmd.ExecuteReader()
+                    While reader.Read()
+                        lista.Add(New LimiteSensorDto With {
+                            .SensorId = reader.GetInt32(0),
+                            .Habilitado = reader.GetInt32(1) = 1,
+                            .TempMin = reader.GetDouble(2),
+                            .TempMax = reader.GetDouble(3)
+                        })
+                    End While
+                End Using
+            End Using
+        End Using
+        Return lista
+    End Function
+
+    Public Sub SalvarLimitesSensores(limites As List(Of LimiteSensorDto))
+        If limites Is Nothing OrElse limites.Count = 0 Then Return
+        Using conn = CriarConexao()
+            conn.Open()
+            Using trans = conn.BeginTransaction()
+                Using cmd = conn.CreateCommand()
+                    cmd.CommandText = "INSERT INTO limites_sensores (sensor_id, habilitado, temp_min, temp_max)
+                                       VALUES (@sid, @hab, @min, @max)
+                                       ON CONFLICT(sensor_id) DO UPDATE SET
+                                       habilitado = @hab, temp_min = @min, temp_max = @max"
+                    Dim pSid = cmd.Parameters.Add("@sid", SqliteType.Integer)
+                    Dim pHab = cmd.Parameters.Add("@hab", SqliteType.Integer)
+                    Dim pMin = cmd.Parameters.Add("@min", SqliteType.Real)
+                    Dim pMax = cmd.Parameters.Add("@max", SqliteType.Real)
+
+                    For Each lim In limites
+                        pSid.Value = lim.SensorId
+                        pHab.Value = If(lim.Habilitado, 1, 0)
+                        pMin.Value = lim.TempMin
+                        pMax.Value = lim.TempMax
+                        cmd.ExecuteNonQuery()
+                    Next
+                End Using
+                trans.Commit()
+            End Using
+        End Using
+    End Sub
 
     Private Function CriarConexao() As SqliteConnection
         Return New SqliteConnection($"Data Source={_caminhoDb}")

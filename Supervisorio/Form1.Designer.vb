@@ -50,6 +50,8 @@ Partial Class MainForm
         btnRelatorios = New ToolStripButton()
         ToolStripSeparator6 = New ToolStripSeparator()
         btnImportarQualidade = New ToolStripButton()
+        ToolStripSeparator7 = New ToolStripSeparator()
+        btnLimitesSensores = New ToolStripButton()
         lblResult = New Label()
         TimerCLP = New Timer(components)
         StatusStrip1 = New StatusStrip()
@@ -154,7 +156,7 @@ Partial Class MainForm
         BarraFerramentasPrincipal.Font = New Font("Segoe UI", 8F, FontStyle.Bold, GraphicsUnit.Point)
         BarraFerramentasPrincipal.GripMargin = New Padding(10, 2, 2, 2)
         BarraFerramentasPrincipal.ImageScalingSize = New Size(70, 70)
-        BarraFerramentasPrincipal.Items.AddRange(New ToolStripItem() {ToolStripButton1, btnMenuSADEMA, ToolStripSplitButton1, BtnAlaNova, ToolStripSeparator4, btnTuneis47, ToolStripSeparator1, btnCamaras, ToolStripSeparator2, btnMiudos, ToolStripSeparator3, ToolStripButton2, ToolStripSeparator5, btnRelatorios, ToolStripSeparator6, btnImportarQualidade})
+        BarraFerramentasPrincipal.Items.AddRange(New ToolStripItem() {ToolStripButton1, btnMenuSADEMA, ToolStripSplitButton1, BtnAlaNova, ToolStripSeparator4, btnTuneis47, ToolStripSeparator1, btnCamaras, ToolStripSeparator2, btnMiudos, ToolStripSeparator3, ToolStripButton2, ToolStripSeparator5, btnRelatorios, ToolStripSeparator6, btnImportarQualidade, ToolStripSeparator7, btnLimitesSensores})
         BarraFerramentasPrincipal.Location = New Point(0, 24)
         BarraFerramentasPrincipal.Name = "BarraFerramentasPrincipal"
         BarraFerramentasPrincipal.Padding = New Padding(0, 0, 2, 0)
@@ -310,6 +312,20 @@ Partial Class MainForm
         btnImportarQualidade.Size = New Size(74, 89)
         btnImportarQualidade.Text = "Importar Planilha"
         btnImportarQualidade.TextImageRelation = TextImageRelation.ImageAboveText
+        ' 
+        ' ToolStripSeparator7
+        ' 
+        ToolStripSeparator7.Name = "ToolStripSeparator7"
+        ToolStripSeparator7.Size = New Size(6, 92)
+        ' 
+        ' btnLimitesSensores
+        ' 
+        btnLimitesSensores.Image = My.Resources.Resources.Engrenagem
+        btnLimitesSensores.ImageTransparentColor = Color.White
+        btnLimitesSensores.Name = "btnLimitesSensores"
+        btnLimitesSensores.Size = New Size(74, 89)
+        btnLimitesSensores.Text = "Limites Sensores"
+        btnLimitesSensores.TextImageRelation = TextImageRelation.ImageAboveText
         ' 
         ' lblResult
         ' 
@@ -933,4 +949,6 @@ Partial Class MainForm
     Friend WithEvents btnRelatorios As ToolStripButton
     Friend WithEvents ToolStripSeparator6 As ToolStripSeparator
     Friend WithEvents btnImportarQualidade As ToolStripButton
+    Friend WithEvents ToolStripSeparator7 As ToolStripSeparator
+    Friend WithEvents btnLimitesSensores As ToolStripButton
 End Class
