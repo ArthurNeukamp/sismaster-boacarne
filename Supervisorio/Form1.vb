@@ -2423,6 +2423,11 @@ Public Class MainForm
                 ToolStripSeparator7.Visible = podeLimites
             End If
         End If
+
+        ' Atualiza a máscara de bloqueio e offsets de todas as telas operacionais abertas
+        For Each child In Me.MdiChildren
+            Module2.AtualizarSegurancaForm(child)
+        Next
     End Sub
 
     Private Sub btnLimitesSensores_Click(sender As Object, e As EventArgs) Handles btnLimitesSensores.Click

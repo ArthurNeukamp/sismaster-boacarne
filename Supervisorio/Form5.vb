@@ -847,6 +847,7 @@ Public Class FrmAmbientes
         imgRecolhendo.Visible = False
         imgResfrigerando.Visible = False
         imgRepouso.Visible = True
+        Module2.AtualizarSegurancaForm(Me)
     End Sub
 
     Private Sub edtOffset_KeyPress(sender As Object, e As KeyPressEventArgs) Handles edtOffset.KeyPress

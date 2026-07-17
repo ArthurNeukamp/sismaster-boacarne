@@ -1,4 +1,6 @@
 Imports FieldTalk.Modbus.Master
+Imports System.Windows.Forms
+Imports System.Drawing
 
 Module Module2
     ' Variáveis globais para controle de sessão de usuário logado
@@ -424,4 +426,106 @@ Module Module2
         End If
     End Function
 
+    Public Sub AtualizarSegurancaForm(form As Form)
+        Try
+            Dim deslogado As Boolean = String.IsNullOrEmpty(UsuarioLogado)
+            
+            ' Gerencia o painel de bloqueio dinâmico em todas as 6 telas de ambientes/controles
+            Dim precisaBloqueio As Boolean = (TypeOf form Is FrmAmbientes OrElse
+                                             TypeOf form Is FrmAlaNova OrElse
+                                             TypeOf form Is FrmTuneis47 OrElse
+                                             TypeOf form Is frmCamaras OrElse
+                                             TypeOf form Is frmTuneisMiudos OrElse
+                                             TypeOf form Is frmClimatizacao)
+                                             
+            If precisaBloqueio Then
+                Dim overlay = form.Controls("pnlLockOverlay")
+                If deslogado Then
+                    If overlay Is Nothing Then
+                        ' Usa LockOverlayPanel com WS_EX_TRANSPARENT para transparência real entre irmãos
+                        Dim pnl As New LockOverlayPanel()
+                        pnl.Name = "pnlLockOverlay"
+                        pnl.Dock = DockStyle.Fill
+                        pnl.BackColor = Color.Transparent
+                        pnl.Cursor = Cursors.Default
+
+                        AddHandler pnl.Click, AddressOf OverlayPanel_Click
+
+                        form.Controls.Add(pnl)
+                        pnl.BringToFront()
+                    Else
+                        overlay.Visible = True
+                        overlay.BringToFront()
+                    End If
+                Else
+                    If overlay IsNot Nothing Then
+                        overlay.Visible = False
+                    End If
+                End If
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Erro ao aplicar segurança: " & ex.Message, "Diagnóstico", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub OverlayPanel_Click(sender As Object, e As EventArgs)
+        Try
+            Dim pnl = CType(sender, Panel)
+            Dim parentForm = pnl.FindForm()
+            If parentForm IsNot Nothing Then
+                Dim screenPoint As Point = Control.MousePosition
+                Dim clientPoint = parentForm.PointToClient(screenPoint)
+
+                Dim ctrlUnder = ObterControleSobPonto(parentForm, clientPoint, pnl)
+                If ctrlUnder IsNot Nothing AndAlso TypeOf ctrlUnder Is Label AndAlso ctrlUnder.Name.StartsWith("lblAtalho", StringComparison.OrdinalIgnoreCase) Then
+                    ' Dispara o clique do atalho de navegação de forma programática
+                    Dim onClickMethod = GetType(Control).GetMethod("OnClick", System.Reflection.BindingFlags.NonPublic Or System.Reflection.BindingFlags.Instance)
+                    If onClickMethod IsNot Nothing Then
+                        onClickMethod.Invoke(ctrlUnder, New Object() {EventArgs.Empty})
+                        Return
+                    End If
+                End If
+            End If
+
+            MessageBox.Show("Faça login para realizar alterações.", "Acesso Restrito", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        Catch ex As Exception
+            MessageBox.Show("Erro ao redirecionar clique: " & ex.Message, "Diagnóstico", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Function ObterControleSobPonto(parent As Control, pt As Point, skipControl As Control) As Control
+        Try
+            For i As Integer = parent.Controls.Count - 1 To 0 Step -1
+                Dim ctrl = parent.Controls(i)
+                If ctrl IsNot skipControl AndAlso ctrl.Visible AndAlso ctrl.Bounds.Contains(pt) Then
+                    If ctrl.HasChildren Then
+                        Dim ptChild As New Point(pt.X - ctrl.Location.X, pt.Y - ctrl.Location.Y)
+                        Dim subCtrl = ObterControleSobPonto(ctrl, ptChild, skipControl)
+                        If subCtrl IsNot Nothing Then Return subCtrl
+                    End If
+                    Return ctrl
+                End If
+            Next
+        Catch ex As Exception
+            ' Continua silenciosamente em caso de erro
+        End Try
+        Return Nothing
+    End Function
+
 End Module
+
+Public Class LockOverlayPanel
+    Inherits Panel
+
+    Protected Overrides ReadOnly Property CreateParams() As CreateParams
+        Get
+            Dim cp As CreateParams = MyBase.CreateParams
+            cp.ExStyle = cp.ExStyle Or &H20 ' WS_EX_TRANSPARENT
+            Return cp
+        End Get
+    End Property
+
+    Protected Overrides Sub OnPaintBackground(ByVal pevent As PaintEventArgs)
+        ' Não faz nada para garantir transparência real sobre os controles irmãos
+    End Sub
+End Class

@@ -1,8 +1,9 @@
-﻿Public Class frmCamaras
+Public Class frmCamaras
     Private Sub frmCamaras_Shown(sender As Object, e As EventArgs) Handles MyBase.Shown
         Timer1.Interval = 500
         Timer1.Enabled = True
         MainForm.MenuPrincipal.Focus()
+        Module2.AtualizarSegurancaForm(Me)
     End Sub
 
     Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
