@@ -429,7 +429,8 @@ Module Module2
     Public Sub AtualizarSegurancaForm(form As Form)
         Try
             Dim deslogado As Boolean = String.IsNullOrEmpty(UsuarioLogado)
-            
+            Dim isAdmin As Boolean = (GrupoLogado = GrupoUsuario.Administracao) AndAlso Not deslogado
+
             ' Gerencia o painel de bloqueio dinâmico em todas as 6 telas de ambientes/controles
             Dim precisaBloqueio As Boolean = (TypeOf form Is FrmAmbientes OrElse
                                              TypeOf form Is FrmAlaNova OrElse
@@ -437,7 +438,7 @@ Module Module2
                                              TypeOf form Is frmCamaras OrElse
                                              TypeOf form Is frmTuneisMiudos OrElse
                                              TypeOf form Is frmClimatizacao)
-                                             
+
             If precisaBloqueio Then
                 Dim overlay = form.Controls("pnlLockOverlay")
                 If deslogado Then
@@ -462,10 +463,44 @@ Module Module2
                         overlay.Visible = False
                     End If
                 End If
+
+                ' Oculta ou exibe campos de Offset para o perfil Administrador
+                ConfigurarVisibilidadeOffsets(form.Controls, isAdmin)
             End If
         Catch ex As Exception
             MessageBox.Show("Erro ao aplicar segurança: " & ex.Message, "Diagnóstico", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private Sub ConfigurarVisibilidadeOffsets(controls As Control.ControlCollection, isAdmin As Boolean)
+        For Each ctrl As Control In controls
+            If TypeOf ctrl Is Label Then
+                Dim lbl = CType(ctrl, Label)
+                If lbl.Text = "OffSet" OrElse lbl.Text = "Offset" Then
+                    ' Se for Administrador, oculta o label e o textbox correspondente
+                    lbl.Visible = Not isAdmin
+                    OcularTextBoxOffsetParceiro(lbl, visible:=Not isAdmin)
+                End If
+            End If
+
+            ' Recursão para containers internos (Panels, GroupBoxes, etc.)
+            If ctrl.HasChildren Then
+                ConfigurarVisibilidadeOffsets(ctrl.Controls, isAdmin)
+            End If
+        Next
+    End Sub
+
+    Private Sub OcularTextBoxOffsetParceiro(lbl As Label, visible As Boolean)
+        If lbl.Parent IsNot Nothing Then
+            For Each sibling As Control In lbl.Parent.Controls
+                If TypeOf sibling Is TextBox Then
+                    ' Verifica alinhamento vertical próximo para associar o textbox ao label
+                    If Math.Abs(sibling.Location.Y - lbl.Location.Y) < 15 Then
+                        sibling.Visible = visible
+                    End If
+                End If
+            Next
+        End If
     End Sub
 
     Private Sub OverlayPanel_Click(sender As Object, e As EventArgs)
