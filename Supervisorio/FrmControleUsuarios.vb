@@ -41,6 +41,12 @@ Public Class FrmControleUsuarios
     Private Sub CarregarUsuarios()
         _listaOriginal = _db.ListarUsuarios()
 
+        ' Se não for Administrador, exibe na lista apenas o próprio usuário logado
+        Dim isAdmin As Boolean = (GrupoLogado = GrupoUsuario.Administracao)
+        If Not isAdmin Then
+            _listaOriginal = _listaOriginal.Where(Function(u) u.Usuario.ToLower() = UsuarioLogado.ToLower()).ToList()
+        End If
+
         ' Mapear para exibição amigável no Grid
         Dim viewList = (From u In _listaOriginal
                         Select New With {
@@ -89,8 +95,11 @@ Public Class FrmControleUsuarios
                 txtEmail.Text = _selectedUser.Email
                 cbGrupo.SelectedItem = ObterNomeExibicaoGrupo(_selectedUser.Grupo)
                 
+                Dim isAdmin As Boolean = (GrupoLogado = GrupoUsuario.Administracao)
                 lblAvisoSenha.Visible = True
-                btnExcluir.Enabled = True
+                btnExcluir.Enabled = isAdmin
+                btnExcluir.Visible = isAdmin
+                cbGrupo.Enabled = isAdmin
             End If
         End If
     End Sub
@@ -100,7 +109,21 @@ Public Class FrmControleUsuarios
         Dim senha As String = txtSenha.Text
         Dim confirmar As String = txtConfirmarSenha.Text
         Dim email As String = txtEmail.Text.Trim()
-        Dim grupo As GrupoUsuario = ObterEnumGrupo(cbGrupo.SelectedItem.ToString())
+        
+        ' Segurança extra: impede alteração de grupo se não for administrador
+        Dim isAdmin As Boolean = (GrupoLogado = GrupoUsuario.Administracao)
+        Dim grupo As GrupoUsuario
+        If isAdmin Then
+            grupo = ObterEnumGrupo(cbGrupo.SelectedItem.ToString())
+        Else
+            ' Força o usuário selecionado a ser o próprio logado
+            If _selectedUser Is Nothing OrElse _selectedUser.Usuario.ToLower() <> UsuarioLogado.ToLower() Then
+                MessageBox.Show("Ação não autorizada.", "Segurança", MessageBoxButtons.OK, MessageBoxIcon.Stop)
+                Return
+            End If
+            username = _selectedUser.Usuario
+            grupo = _selectedUser.Grupo
+        End If
 
         ' Validações básicas comuns
         If String.IsNullOrWhiteSpace(username) Then
@@ -234,16 +257,45 @@ Public Class FrmControleUsuarios
     End Sub
 
     Private Sub LimparFormulario()
-        _selectedUser = Nothing
-        txtUsuario.Text = ""
-        txtUsuario.ReadOnly = False
-        txtSenha.Text = ""
-        txtConfirmarSenha.Text = ""
-        txtEmail.Text = ""
-        cbGrupo.SelectedIndex = 0
+        Dim isAdmin As Boolean = (GrupoLogado = GrupoUsuario.Administracao)
         
-        lblAvisoSenha.Visible = False
-        btnExcluir.Enabled = False
-        dgvUsuarios.ClearSelection()
+        If isAdmin Then
+            _selectedUser = Nothing
+            txtUsuario.Text = ""
+            txtUsuario.ReadOnly = False
+            txtSenha.Text = ""
+            txtConfirmarSenha.Text = ""
+            txtEmail.Text = ""
+            cbGrupo.SelectedIndex = 0
+            
+            lblAvisoSenha.Visible = False
+            btnExcluir.Enabled = False
+            btnExcluir.Visible = True
+            btnLimpar.Enabled = True
+            btnLimpar.Visible = True
+            cbGrupo.Enabled = True
+            dgvUsuarios.ClearSelection()
+        Else
+            ' Para não-administrador, sempre mantém o próprio usuário selecionado e carregado
+            If _listaOriginal IsNot Nothing AndAlso _listaOriginal.Count > 0 Then
+                _selectedUser = _listaOriginal.FirstOrDefault(Function(u) u.Usuario.ToLower() = UsuarioLogado.ToLower())
+            End If
+            
+            If _selectedUser IsNot Nothing Then
+                txtUsuario.Text = _selectedUser.Usuario
+                txtUsuario.ReadOnly = True
+                txtSenha.Text = ""
+                txtConfirmarSenha.Text = ""
+                txtEmail.Text = _selectedUser.Email
+                cbGrupo.SelectedItem = ObterNomeExibicaoGrupo(_selectedUser.Grupo)
+                
+                lblAvisoSenha.Visible = True
+                btnExcluir.Enabled = False
+                btnExcluir.Visible = False
+                btnLimpar.Enabled = False
+                btnLimpar.Visible = False
+                cbGrupo.Enabled = False
+            End If
+        End If
     End Sub
 End Class

@@ -2358,11 +2358,6 @@ Public Class MainForm
     End Function
 
     Private Sub btnControleUsers_Click(sender As Object, e As EventArgs)
-        If GrupoLogado <> GrupoUsuario.Administracao Then
-            MessageBox.Show("Acesso restrito ao grupo de Administração.", "Controle de Acesso", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Return
-        End If
-
         Using frm As New FrmControleUsuarios(_db)
             frm.ShowDialog()
         End Using
@@ -2405,9 +2400,8 @@ Public Class MainForm
             If btnLogin IsNot Nothing Then btnLogin.Visible = False
             If btnSair IsNot Nothing Then btnSair.Visible = True
             
-            Dim isAdmin As Boolean = (GrupoLogado = GrupoUsuario.Administracao)
-            If btnControleUsers IsNot Nothing Then btnControleUsers.Visible = isAdmin
-            If sep3 IsNot Nothing Then sep3.Visible = isAdmin
+            If btnControleUsers IsNot Nothing Then btnControleUsers.Visible = True
+            If sep3 IsNot Nothing Then sep3.Visible = True
 
             ' Apenas o grupo de manutenção visualiza o botão de importar excel
             If btnImportarQualidade IsNot Nothing Then

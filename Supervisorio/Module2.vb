@@ -429,7 +429,7 @@ Module Module2
     Public Sub AtualizarSegurancaForm(form As Form)
         Try
             Dim deslogado As Boolean = String.IsNullOrEmpty(UsuarioLogado)
-            Dim isAdmin As Boolean = (GrupoLogado = GrupoUsuario.Administracao) AndAlso Not deslogado
+            Dim deveExibirOffset As Boolean = (GrupoLogado = GrupoUsuario.Manutencao) AndAlso Not deslogado
 
             ' Gerencia o painel de bloqueio dinâmico em todas as 6 telas de ambientes/controles
             Dim precisaBloqueio As Boolean = (TypeOf form Is FrmAmbientes OrElse
@@ -464,28 +464,28 @@ Module Module2
                     End If
                 End If
 
-                ' Oculta ou exibe campos de Offset para o perfil Administrador
-                ConfigurarVisibilidadeOffsets(form.Controls, isAdmin)
+                ' Exibe os campos de Offset apenas para o perfil de Manutenção
+                ConfigurarVisibilidadeOffsets(form.Controls, deveExibirOffset)
             End If
         Catch ex As Exception
             MessageBox.Show("Erro ao aplicar segurança: " & ex.Message, "Diagnóstico", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
-    Private Sub ConfigurarVisibilidadeOffsets(controls As Control.ControlCollection, isAdmin As Boolean)
+    Private Sub ConfigurarVisibilidadeOffsets(controls As Control.ControlCollection, exibir As Boolean)
         For Each ctrl As Control In controls
             If TypeOf ctrl Is Label Then
                 Dim lbl = CType(ctrl, Label)
                 If lbl.Text = "OffSet" OrElse lbl.Text = "Offset" Then
-                    ' Se for Administrador, oculta o label e o textbox correspondente
-                    lbl.Visible = Not isAdmin
-                    OcularTextBoxOffsetParceiro(lbl, visible:=Not isAdmin)
+                    ' Exibe apenas se a permissão (exibir) for verdadeira
+                    lbl.Visible = exibir
+                    OcularTextBoxOffsetParceiro(lbl, visible:=exibir)
                 End If
             End If
 
             ' Recursão para containers internos (Panels, GroupBoxes, etc.)
             If ctrl.HasChildren Then
-                ConfigurarVisibilidadeOffsets(ctrl.Controls, isAdmin)
+                ConfigurarVisibilidadeOffsets(ctrl.Controls, exibir)
             End If
         Next
     End Sub
