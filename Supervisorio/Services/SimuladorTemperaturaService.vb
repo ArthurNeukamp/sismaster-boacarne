@@ -71,15 +71,16 @@ Public Class SimuladorTemperaturaService
 
         For Each cycle In ciclos
             ' 1. Calcular horarios do ciclo (dinâmico com base no DataFim/HoraFim do Excel)
+            Dim carregamento = cycle.DataCarregamento.Date.Add(cycle.HoraCarregamento)
             Dim inicio = cycle.DataInicio.Date.Add(cycle.HoraInicio)
             Dim fim = cycle.DataFim.Date.Add(cycle.HoraFim)
-            Dim duracaoHoras As Double = (fim - inicio).TotalHours
+            Dim duracaoHoras As Double = (fim - carregamento).TotalHours
 
             ' 2. Mapeamento para buscar os timestamps reais do sensor físico correspondente (ID FAKE - 100)
             Dim physicalSensorId As Integer = cycle.SensorId - 100
             Dim intervalMinutes As Double = 10.0 ' Intervalo padrão
             Try
-                Dim dtFisico = db.ConsultarSensor(physicalSensorId, inicio, fim)
+                Dim dtFisico = db.ConsultarSensor(physicalSensorId, carregamento, fim)
                 If dtFisico IsNot Nothing AndAlso dtFisico.Rows.Count >= 2 Then
                     Dim dtVal1 As DateTime
                     Dim dtVal2 As DateTime
@@ -105,7 +106,7 @@ Public Class SimuladorTemperaturaService
             Dim totalMinutos As Double = duracaoHoras * 60.0
             Dim totalPassos As Integer = CInt(Math.Floor(totalMinutos / intervalMinutes))
             For i = 0 To totalPassos
-                timestamps.Add(inicio.AddMinutes(i * intervalMinutes))
+                timestamps.Add(carregamento.AddMinutes(i * intervalMinutes))
             Next
 
             ' 3. Gerar pontos de simulacao correspondentes aos timestamps
@@ -116,7 +117,7 @@ Public Class SimuladorTemperaturaService
             Dim noiseAmplitude As Double = 0.015 * (intervalMinutes / 10.0)
             Dim lowerBound As Double = Math.Max(2.0, targetTemp - 0.8)
             Dim upperBound As Double = Math.Min(4.0, targetTemp + 0.8)
-            Dim coolingDuration As Double = 1.833 + (rnd.NextDouble() * 0.334)
+            Dim coolingDuration As Double = 1.8333 + (rnd.NextDouble() * 1.0)
             Dim lagDuration As Double = 0.1 + (rnd.NextDouble() * 0.15)
             Dim kFactor As Double = 1.2 + (rnd.NextDouble() * 1.0)
 
@@ -140,14 +141,13 @@ Public Class SimuladorTemperaturaService
             Dim dates(totalPontos) As Double
             Dim temps(totalPontos) As Double
 
-            Dim currentTemp As Double = cycle.TempInicial
+            Dim currentTemp As Double = cycle.TempCarregamento
             Dim currentVelocity As Double = 0.0
             Dim wobble As Double = 0.0
             Dim wobbleVelocity As Double = 0.0
 
             For i = 0 To totalPontos
                 Dim ptTime = timestamps(i)
-                Dim t_hours As Double = (ptTime - inicio).TotalHours
 
                 Dim temp As Double
                 
@@ -173,17 +173,20 @@ Public Class SimuladorTemperaturaService
                         Dim progress = elapsedMinutes / currentDefrost.DurationMinutes
                         Dim peakTemp = currentDefrost.PeakTemp
 
-                        If progress < 0.3 Then
-                            Dim startTempOfDefrost = 3.0
-                            If i > 0 Then startTempOfDefrost = temps(i - 1)
-                            temp = startTempOfDefrost + (peakTemp - startTempOfDefrost) * (progress / 0.3)
+                        If progress < 0.5 Then
+                            Dim startTempOfDefrost As Double = cycle.TempInicial
+                            temp = startTempOfDefrost + (peakTemp - startTempOfDefrost) * (progress / 0.5)
+                            
+                            Dim jitter = (rnd.NextDouble() * 1.0) - 0.5
+                            temp = temp + jitter
+                            temp = Math.Min(currentDefrost.TempMax, temp)
                         Else
                             temp = peakTemp
+                            
+                            Dim jitter = (rnd.NextDouble() * 1.0) - 0.5
+                            temp = temp + jitter
+                            temp = Math.Max(currentDefrost.TempMin, Math.Min(currentDefrost.TempMax, temp))
                         End If
-
-                        Dim jitter = (rnd.NextDouble() * 1.0) - 0.5
-                        temp = temp + jitter
-                        temp = Math.Max(currentDefrost.TempMin, Math.Min(currentDefrost.TempMax, temp))
                         currentTemp = temp
                         currentVelocity = 0.0
                     Else
@@ -200,58 +203,90 @@ Public Class SimuladorTemperaturaService
                         currentVelocity = 0.0
                     End If
                 Else
-                    If t_hours <= lagDuration Then
-                        Dim noise = (rnd.NextDouble() * 1.6) - 0.8
-                        temp = cycle.TempInicial + noise
-                        currentTemp = temp
-                        currentVelocity = 0.0
-                    ElseIf t_hours <= coolingDuration Then
-                        Dim t_norm As Double = (t_hours - lagDuration) / (coolingDuration - lagDuration)
-                        Dim decay As Double = Math.Exp(-kFactor * t_norm * 3.5)
-                        Dim baseTemp As Double = targetTemp + (cycle.TempInicial - targetTemp) * decay
+                    If ptTime < inicio Then
+                        ' Descida da TempCarregamento para TempInicial no carregamento
+                        Dim t_hours_carreg As Double = (ptTime - carregamento).TotalHours
+                        Dim loadingDuration As Double = (inicio - carregamento).TotalHours
+                        Dim t_norm As Double = t_hours_carreg / loadingDuration
+                        Dim exponent As Double = 1.3 + (rnd.NextDouble() * 0.6)
+                        Dim decay As Double = Math.Pow(Math.Max(0.0, 1.0 - t_norm), exponent)
+                        Dim baseTemp As Double = cycle.TempInicial + (cycle.TempCarregamento - cycle.TempInicial) * decay
 
                         Dim stepScale As Double = intervalMinutes / 10.0
                         wobbleVelocity = 0.85 * wobbleVelocity + ((rnd.NextDouble() * 0.3) - 0.15) * stepScale
                         wobble = wobble + wobbleVelocity
 
-                        Dim wobbleScale As Double = (cycle.TempInicial - targetTemp) * 0.2
+                        Dim wobbleScale As Double = (cycle.TempCarregamento - cycle.TempInicial) * 0.2
                         Dim dampFactor As Double = Math.Max(0.0, 1.0 - t_norm)
                         Dim finalWobble As Double = wobble * dampFactor * wobbleScale
 
-                        Dim noise = (rnd.NextDouble() * 2.0) - 1.0
+                        ' Ruído com amortecimento para que varie apenas de 0 a -1°C no momento exato do início
+                        Dim noise As Double = ((rnd.NextDouble() * 2.0) - 1.0) * dampFactor + (1.0 - dampFactor) * (rnd.NextDouble() * -1.0)
                         temp = baseTemp + finalWobble + noise
                         currentTemp = temp
                         currentVelocity = 0.0
                     Else
-                        Dim randVal = (rnd.NextDouble() * 2.0) - 1.0
-                        Dim acceleration As Double = randVal * noiseAmplitude
+                        Dim t_hours As Double = (ptTime - inicio).TotalHours
+                        
+                        If t_hours <= lagDuration Then
+                            ' Período de lag logo após o início: mantém próximo da TempInicial com ruído negativo
+                            Dim noise = (rnd.NextDouble() * -1.0)
+                            temp = cycle.TempInicial + noise
+                            currentTemp = temp
+                            currentVelocity = 0.0
+                        ElseIf t_hours <= coolingDuration Then
+                            ' Período de descida contínua pós-início rumo à estabilização (aproximadamente 2h)
+                            Dim t_norm As Double = (t_hours - lagDuration) / (coolingDuration - lagDuration)
+                            Dim decay As Double = Math.Exp(-kFactor * t_norm * 3.5)
+                            Dim baseTemp As Double = targetTemp + (cycle.TempInicial - targetTemp) * decay
 
-                        Dim springStrength As Double = 0.04 * (intervalMinutes / 10.0)
-                        Dim springForce As Double = (targetTemp - currentTemp) * springStrength
+                            ' Reset do wobble e velocidade no primeiro passo da transição para limpar variações acumuladas no carregamento
+                            If t_hours - lagDuration <= (intervalMinutes / 60.0) Then
+                                wobble = 0.0
+                                wobbleVelocity = 0.0
+                            End If
 
-                        currentVelocity = (friction * currentVelocity) + acceleration + springForce
-                        currentVelocity = Math.Max(-maxSpeed, Math.Min(maxSpeed, currentVelocity))
+                            Dim stepScale As Double = intervalMinutes / 10.0
+                            wobbleVelocity = 0.85 * wobbleVelocity + ((rnd.NextDouble() * 0.3) - 0.15) * stepScale
+                            wobble = wobble + wobbleVelocity
 
-                        currentTemp = currentTemp + currentVelocity
+                            ' Redução expressiva do ruído e ondulações (wobbleScale reduzida a 0.05 e ruído de +/-0.4 °C) nesta transição
+                            Dim wobbleScale As Double = (cycle.TempInicial - targetTemp) * 0.05
+                            Dim dampFactor As Double = Math.Max(0.0, 1.0 - t_norm)
+                            Dim finalWobble As Double = wobble * dampFactor * wobbleScale
 
-                        If currentTemp > upperBound Then
-                            currentTemp = upperBound
-                            currentVelocity = -Math.Abs(currentVelocity) * 0.5
-                        ElseIf currentTemp < lowerBound Then
-                            currentTemp = lowerBound
-                            currentVelocity = Math.Abs(currentVelocity) * 0.5
+                            Dim noise = (rnd.NextDouble() * 0.8) - 0.4
+                            temp = baseTemp + finalWobble + noise
+                            currentTemp = temp
+                            currentVelocity = 0.0
+                        Else
+                            ' Fase de maturação estabilizada e ruidosa normal
+                            Dim randVal = (rnd.NextDouble() * 2.0) - 1.0
+                            Dim acceleration As Double = randVal * noiseAmplitude
+
+                            Dim springStrength As Double = 0.04 * (intervalMinutes / 10.0)
+                            Dim springForce As Double = (targetTemp - currentTemp) * springStrength
+
+                            currentVelocity = (friction * currentVelocity) + acceleration + springForce
+                            currentVelocity = Math.Max(-maxSpeed, Math.Min(maxSpeed, currentVelocity))
+
+                            currentTemp = currentTemp + currentVelocity
+
+                            If currentTemp > upperBound Then
+                                currentTemp = upperBound
+                                currentVelocity = -Math.Abs(currentVelocity) * 0.5
+                            ElseIf currentTemp < lowerBound Then
+                                currentTemp = lowerBound
+                                currentVelocity = Math.Abs(currentVelocity) * 0.5
+                            End If
+
+                            temp = currentTemp
+
+                            ' Restaurando o jitter e o clamping originais que garantem a aleatoriedade
+                            Dim jitter As Double = (rnd.NextDouble() * 2.0) - 1.0
+                            temp = temp + jitter
+                            temp = Math.Max(2.0, Math.Min(4.0, temp))
                         End If
-
-                        temp = currentTemp
-                    End If
-
-                    If t_hours > coolingDuration Then
-                        Dim jitter As Double = (rnd.NextDouble() * 2.0) - 1.0
-                        temp = temp + jitter
-                    End If
-
-                    If t_hours > coolingDuration Then
-                        temp = Math.Max(2.0, Math.Min(4.0, temp))
                     End If
                 End If
 
@@ -269,10 +304,10 @@ Public Class SimuladorTemperaturaService
                 temps(i) = tempArredondada
             Next
 
-            db.LimparPeriodoSensor(cycle.SensorId, inicio, fim)
+            db.LimparPeriodoSensor(cycle.SensorId, carregamento, fim)
             db.UpsertLeituras(batch)
 
-            Dim dadosSalvos = db.ConsultarSensor(cycle.SensorId, inicio, fim)
+            Dim dadosSalvos = db.ConsultarSensor(cycle.SensorId, carregamento, fim)
             Dim totalPontosSalvos = dadosSalvos.Rows.Count
             
             Dim datesSalvas(totalPontosSalvos - 1) As Double
@@ -300,7 +335,7 @@ Public Class SimuladorTemperaturaService
             Dim tickPositions(tickCount - 1) As Double
             Dim tickLabels(tickCount - 1) As String
             For k = 0 To tickCount - 1
-                Dim tickTime = inicio.AddHours(k * stepHours)
+                Dim tickTime = carregamento.AddHours(k * stepHours)
                 tickPositions(k) = tickTime.ToOADate()
                 tickLabels(k) = tickTime.ToString("dd/MM/yyyy HH:mm")
             Next
@@ -326,7 +361,7 @@ Public Class SimuladorTemperaturaService
             Dim tempPngPath = Path.Combine(Path.GetTempPath(), $"temp_chart_{Guid.NewGuid().ToString()}.png")
             plt.SaveFig(tempPngPath)
 
-            Dim nomeArquivo = $"Grafico_{cycle.Camara.Replace(" ", "")}_{inicio.ToString("dd-MM-yyyy_HHmm")}.pdf"
+            Dim nomeArquivo = $"Grafico_{cycle.Camara.Replace(" ", "")}_{carregamento.ToString("dd-MM-yyyy_HHmm")}.pdf"
             Dim caminhoPdf = Path.Combine(pastaDestino, nomeArquivo)
 
             Try
@@ -434,9 +469,9 @@ Public Class SimuladorTemperaturaService
                     Next
 
                     Dim relService As New RelatorioService(_config)
-                    Dim nomeArquivoList = $"Relatorio_{cycle.Camara.Replace(" ", "")}_{inicio.ToString("dd-MM-yyyy_HHmm")}.pdf"
+                    Dim nomeArquivoList = $"Relatorio_{cycle.Camara.Replace(" ", "")}_{carregamento.ToString("dd-MM-yyyy_HHmm")}.pdf"
                     Dim caminhoListPdf = Path.Combine(pastaDestino, nomeArquivoList)
-                    relService.ExportarPDF(dadosRelatorio, caminhoListPdf, cycle.Camara, inicio, fim)
+                    relService.ExportarPDF(dadosRelatorio, caminhoListPdf, cycle.Camara, carregamento, fim)
                 Catch ex As Exception
                     LogService.GravarErro("SIMULADOR", $"Erro ao exportar relatório por lista para câmara {cycle.Camara}: {ex.Message}")
                 End Try

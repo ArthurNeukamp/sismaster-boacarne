@@ -11,6 +11,9 @@ Public Class FrmImportarQualidade
         Public Property RowIndex As Integer
         Public Property Camara As String
         Public Property SensorId As Integer
+        Public Property DataCarregamento As DateTime
+        Public Property HoraCarregamento As TimeSpan
+        Public Property TempCarregamento As Double
         Public Property DataInicio As DateTime
         Public Property HoraInicio As TimeSpan
         Public Property TempInicial As Double
@@ -186,10 +189,40 @@ Public Class FrmImportarQualidade
                         erroLinha &= "Câmara não reconhecida ('" & câmara & "'). "
                     End If
 
+                    ' Ler Data, Hora e Temp Carregamento
+                    Dim dCarregOpt = ParseDateTimeCell(row.Cell(2), cultureInfo)
+                    Dim hCarregOpt = ParseTimeSpanCell(row.Cell(3), cultureInfo)
+                    Dim tCarregOpt = ParseDoubleCell(row.Cell(4), cultureInfo)
+
+                    Dim dataCarregamento As DateTime
+                    Dim horaCarregamento As TimeSpan
+                    Dim tempCarregamento As Double
+
+                    If dCarregOpt.HasValue Then
+                        dataCarregamento = dCarregOpt.Value
+                        If dataCarregamento.Year < 2000 Then
+                            erroLinha &= "Data de carregamento muito antiga. "
+                        End If
+                    Else
+                        erroLinha &= "Data de carregamento vazia ou inválida. "
+                    End If
+
+                    If hCarregOpt.HasValue Then
+                        horaCarregamento = hCarregOpt.Value
+                    Else
+                        erroLinha &= "Hora de carregamento vazia ou inválida. "
+                    End If
+
+                    If tCarregOpt.HasValue Then
+                        tempCarregamento = tCarregOpt.Value
+                    Else
+                        erroLinha &= "Temperatura de carregamento vazia ou inválida. "
+                    End If
+
                     ' Ler Data e Hora Início
-                    Dim dIniOpt = ParseDateTimeCell(row.Cell(2), cultureInfo)
-                    Dim hIniOpt = ParseTimeSpanCell(row.Cell(3), cultureInfo)
-                    Dim tIniOpt = ParseDoubleCell(row.Cell(4), cultureInfo)
+                    Dim dIniOpt = ParseDateTimeCell(row.Cell(5), cultureInfo)
+                    Dim hIniOpt = ParseTimeSpanCell(row.Cell(6), cultureInfo)
+                    Dim tIniOpt = ParseDoubleCell(row.Cell(7), cultureInfo)
 
                     Dim dataInicio As DateTime
                     Dim horaInicio As TimeSpan
@@ -217,8 +250,8 @@ Public Class FrmImportarQualidade
                     End If
 
                     ' Ler Data e Hora Fim
-                    Dim dFimOpt = ParseDateTimeCell(row.Cell(5), cultureInfo)
-                    Dim hFimOpt = ParseTimeSpanCell(row.Cell(6), cultureInfo)
+                    Dim dFimOpt = ParseDateTimeCell(row.Cell(8), cultureInfo)
+                    Dim hFimOpt = ParseTimeSpanCell(row.Cell(9), cultureInfo)
 
                     Dim dataFim As DateTime
                     Dim horaFim As TimeSpan
@@ -235,12 +268,18 @@ Public Class FrmImportarQualidade
                         erroLinha &= "Hora de término vazia ou inválida. "
                     End If
 
+                    Dim inicioCarregamento As DateTime
                     Dim inicioCiclo As DateTime
                     Dim fimCiclo As DateTime
 
                     If String.IsNullOrEmpty(erroLinha) Then
+                        inicioCarregamento = dataCarregamento.Date.Add(horaCarregamento)
                         inicioCiclo = dataInicio.Date.Add(horaInicio)
                         fimCiclo = dataFim.Date.Add(horaFim)
+
+                        If inicioCiclo <= inicioCarregamento Then
+                            erroLinha &= "A data/hora de início deve ser maior que a data/hora de carregamento. "
+                        End If
 
                         If fimCiclo <= inicioCiclo Then
                             erroLinha &= "A data/hora de término deve ser maior que a data/hora de início. "
@@ -252,6 +291,9 @@ Public Class FrmImportarQualidade
                     ciclo.RowIndex = linhaAtual
                     ciclo.Camara = câmara
                     ciclo.SensorId = sensorId
+                    ciclo.DataCarregamento = dataCarregamento
+                    ciclo.HoraCarregamento = horaCarregamento
+                    ciclo.TempCarregamento = tempCarregamento
                     ciclo.DataInicio = dataInicio
                     ciclo.HoraInicio = horaInicio
                     ciclo.TempInicial = tempInicial
@@ -261,11 +303,11 @@ Public Class FrmImportarQualidade
                     End If
 
                     ' --- LER E VALIDAR DEGELOS ---
-                    ' Degelo 1 (Col G=7 a J=10)
-                    Dim deg1_D = ParseDateTimeCell(row.Cell(7), cultureInfo)
-                    Dim deg1_H = ParseTimeSpanCell(row.Cell(8), cultureInfo)
-                    Dim deg1_Dur = ParseIntCell(row.Cell(9), cultureInfo)
-                    Dim deg1_Max = ParseDoubleCell(row.Cell(10), cultureInfo)
+                    ' Degelo 1 (Col J=10 a M=13)
+                    Dim deg1_D = ParseDateTimeCell(row.Cell(10), cultureInfo)
+                    Dim deg1_H = ParseTimeSpanCell(row.Cell(11), cultureInfo)
+                    Dim deg1_Dur = ParseIntCell(row.Cell(12), cultureInfo)
+                    Dim deg1_Max = ParseDoubleCell(row.Cell(13), cultureInfo)
 
                     If deg1_D.HasValue OrElse deg1_H.HasValue OrElse deg1_Dur.HasValue OrElse deg1_Max.HasValue Then
                         If Not (deg1_D.HasValue AndAlso deg1_H.HasValue AndAlso deg1_Dur.HasValue AndAlso deg1_Max.HasValue) Then
@@ -282,11 +324,11 @@ Public Class FrmImportarQualidade
                         End If
                     End If
 
-                    ' Degelo 2 (Col K=11 a N=14)
-                    Dim deg2_D = ParseDateTimeCell(row.Cell(11), cultureInfo)
-                    Dim deg2_H = ParseTimeSpanCell(row.Cell(12), cultureInfo)
-                    Dim deg2_Dur = ParseIntCell(row.Cell(13), cultureInfo)
-                    Dim deg2_Max = ParseDoubleCell(row.Cell(14), cultureInfo)
+                    ' Degelo 2 (Col N=14 a Q=17)
+                    Dim deg2_D = ParseDateTimeCell(row.Cell(14), cultureInfo)
+                    Dim deg2_H = ParseTimeSpanCell(row.Cell(15), cultureInfo)
+                    Dim deg2_Dur = ParseIntCell(row.Cell(16), cultureInfo)
+                    Dim deg2_Max = ParseDoubleCell(row.Cell(17), cultureInfo)
 
                     If deg2_D.HasValue OrElse deg2_H.HasValue OrElse deg2_Dur.HasValue OrElse deg2_Max.HasValue Then
                         If Not (deg2_D.HasValue AndAlso deg2_H.HasValue AndAlso deg2_Dur.HasValue AndAlso deg2_Max.HasValue) Then
@@ -303,11 +345,11 @@ Public Class FrmImportarQualidade
                         End If
                     End If
 
-                    ' Degelo 3 (Col O=15 a R=18)
-                    Dim deg3_D = ParseDateTimeCell(row.Cell(15), cultureInfo)
-                    Dim deg3_H = ParseTimeSpanCell(row.Cell(16), cultureInfo)
-                    Dim deg3_Dur = ParseIntCell(row.Cell(17), cultureInfo)
-                    Dim deg3_Max = ParseDoubleCell(row.Cell(18), cultureInfo)
+                    ' Degelo 3 (Col R=18 a U=21)
+                    Dim deg3_D = ParseDateTimeCell(row.Cell(18), cultureInfo)
+                    Dim deg3_H = ParseTimeSpanCell(row.Cell(19), cultureInfo)
+                    Dim deg3_Dur = ParseIntCell(row.Cell(20), cultureInfo)
+                    Dim deg3_Max = ParseDoubleCell(row.Cell(21), cultureInfo)
 
                     If deg3_D.HasValue OrElse deg3_H.HasValue OrElse deg3_Dur.HasValue OrElse deg3_Max.HasValue Then
                         If Not (deg3_D.HasValue AndAlso deg3_H.HasValue AndAlso deg3_Dur.HasValue AndAlso deg3_Max.HasValue) Then
@@ -331,11 +373,11 @@ Public Class FrmImportarQualidade
 
                         If ciclosAceitos.ContainsKey(sensorId) Then
                             For Each interval In ciclosAceitos(sensorId)
-                                If inicioCiclo < interval.Item2 AndAlso fimCiclo > interval.Item1 Then
+                                If inicioCarregamento < interval.Item2 AndAlso fimCiclo > interval.Item1 Then
                                     conflito = True
                                     intConflito = interval
                                     Exit For
-                                End If
+                                end If
                             Next
                         End If
 
@@ -345,7 +387,7 @@ Public Class FrmImportarQualidade
                             If Not ciclosAceitos.ContainsKey(sensorId) Then
                                 ciclosAceitos(sensorId) = New List(Of Tuple(Of DateTime, DateTime))()
                             End If
-                            ciclosAceitos(sensorId).Add(Tuple.Create(inicioCiclo, fimCiclo))
+                            ciclosAceitos(sensorId).Add(Tuple.Create(inicioCarregamento, fimCiclo))
                         End If
                     End If
 
@@ -365,9 +407,9 @@ Public Class FrmImportarQualidade
                                    Select New With {
                                        .Linha = c.RowIndex,
                                        .Câmara = c.Camara,
-                                       .Data = c.DataInicio.ToString("dd/MM/yyyy"),
-                                       .Hora = c.HoraInicio.ToString("hh\:mm"),
-                                       .TempInicial = c.TempInicial.ToString("0.0") & " °C"
+                                       .Carregamento = c.DataCarregamento.ToString("dd/MM/yyyy") & " " & c.HoraCarregamento.ToString("hh\:mm"),
+                                       .Início = c.DataInicio.ToString("dd/MM/yyyy") & " " & c.HoraInicio.ToString("hh\:mm"),
+                                       .Fim = c.DataFim.ToString("dd/MM/yyyy") & " " & c.HoraFim.ToString("hh\:mm")
                                    }).ToList()
             
             ' Preencher o painel de alertas
