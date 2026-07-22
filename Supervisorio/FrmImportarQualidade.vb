@@ -14,22 +14,28 @@ Public Class FrmImportarQualidade
         Public Property DataCarregamento As DateTime
         Public Property HoraCarregamento As TimeSpan
         Public Property TempCarregamento As Double
-        Public Property DataInicio As DateTime
-        Public Property HoraInicio As TimeSpan
-        Public Property TempInicial As Double
+        Public Property DataInicio As DateTime?
+        Public Property HoraInicio As TimeSpan?
+        Public Property TempInicial As Double?
         Public Property DataFim As DateTime
         Public Property HoraFim As TimeSpan
-        
+
+        Public ReadOnly Property TemInicio As Boolean
+            Get
+                Return DataInicio.HasValue AndAlso HoraInicio.HasValue AndAlso TempInicial.HasValue
+            End Get
+        End Property
+
         Public Property Degelo1_Data As DateTime?
         Public Property Degelo1_Hora As TimeSpan?
         Public Property Degelo1_Duracao As Integer
         Public Property Degelo1_TempMax As Double
-        
+
         Public Property Degelo2_Data As DateTime?
         Public Property Degelo2_Hora As TimeSpan?
         Public Property Degelo2_Duracao As Integer
         Public Property Degelo2_TempMax As Double
-        
+
         Public Property Degelo3_Data As DateTime?
         Public Property Degelo3_Hora As TimeSpan?
         Public Property Degelo3_Duracao As Integer
@@ -219,34 +225,27 @@ Public Class FrmImportarQualidade
                         erroLinha &= "Temperatura de carregamento vazia ou inválida. "
                     End If
 
-                    ' Ler Data e Hora Início
+                    ' Ler Data e Hora Início (opcionais)
                     Dim dIniOpt = ParseDateTimeCell(row.Cell(5), cultureInfo)
                     Dim hIniOpt = ParseTimeSpanCell(row.Cell(6), cultureInfo)
                     Dim tIniOpt = ParseDoubleCell(row.Cell(7), cultureInfo)
 
-                    Dim dataInicio As DateTime
-                    Dim horaInicio As TimeSpan
-                    Dim tempInicial As Double
+                    Dim dataInicio As DateTime? = Nothing
+                    Dim horaInicio As TimeSpan? = Nothing
+                    Dim tempInicial As Double? = Nothing
 
-                    If dIniOpt.HasValue Then
+                    Dim temAlgumInicio As Boolean = dIniOpt.HasValue OrElse hIniOpt.HasValue OrElse tIniOpt.HasValue
+                    Dim temTodoInicio As Boolean = dIniOpt.HasValue AndAlso hIniOpt.HasValue AndAlso tIniOpt.HasValue
+
+                    If temAlgumInicio AndAlso Not temTodoInicio Then
+                        erroLinha &= "Se informados, os campos de início (data, hora e temperatura) devem estar todos preenchidos. "
+                    ElseIf temTodoInicio Then
                         dataInicio = dIniOpt.Value
-                        If dataInicio.Year < 2000 Then
+                        If dataInicio.Value.Year < 2000 Then
                             erroLinha &= "Data de início muito antiga (deve ser posterior ao ano 2000). "
                         End If
-                    Else
-                        erroLinha &= "Data de início vazia ou inválida. "
-                    End If
-
-                    If hIniOpt.HasValue Then
                         horaInicio = hIniOpt.Value
-                    Else
-                        erroLinha &= "Hora de início vazia ou inválida. "
-                    End If
-
-                    If tIniOpt.HasValue Then
                         tempInicial = tIniOpt.Value
-                    Else
-                        erroLinha &= "Temperatura inicial vazia ou inválida. "
                     End If
 
                     ' Ler Data e Hora Fim
@@ -269,20 +268,24 @@ Public Class FrmImportarQualidade
                     End If
 
                     Dim inicioCarregamento As DateTime
-                    Dim inicioCiclo As DateTime
                     Dim fimCiclo As DateTime
 
                     If String.IsNullOrEmpty(erroLinha) Then
                         inicioCarregamento = dataCarregamento.Date.Add(horaCarregamento)
-                        inicioCiclo = dataInicio.Date.Add(horaInicio)
                         fimCiclo = dataFim.Date.Add(horaFim)
 
-                        If inicioCiclo <= inicioCarregamento Then
-                            erroLinha &= "A data/hora de início deve ser maior que a data/hora de carregamento. "
-                        End If
-
-                        If fimCiclo <= inicioCiclo Then
-                            erroLinha &= "A data/hora de término deve ser maior que a data/hora de início. "
+                        If temTodoInicio Then
+                            Dim inicioCiclo = dataInicio.Value.Date.Add(horaInicio.Value)
+                            If inicioCiclo <= inicioCarregamento Then
+                                erroLinha &= "A data/hora de início deve ser maior que a data/hora de carregamento. "
+                            End If
+                            If fimCiclo <= inicioCiclo Then
+                                erroLinha &= "A data/hora de término deve ser maior que a data/hora de início. "
+                            End If
+                        Else
+                            If fimCiclo <= inicioCarregamento Then
+                                erroLinha &= "A data/hora de término deve ser maior que a data/hora de carregamento. "
+                            End If
                         End If
                     End If
 
@@ -302,6 +305,8 @@ Public Class FrmImportarQualidade
                         ciclo.HoraFim = horaFim
                     End If
 
+                    Dim inicioReferencia As DateTime = If(ciclo.TemInicio, ciclo.DataInicio.Value.Date.Add(ciclo.HoraInicio.Value), inicioCarregamento)
+
                     ' --- LER E VALIDAR DEGELOS ---
                     ' Degelo 1 (Col J=10 a M=13)
                     Dim deg1_D = ParseDateTimeCell(row.Cell(10), cultureInfo)
@@ -311,10 +316,10 @@ Public Class FrmImportarQualidade
 
                     If deg1_D.HasValue OrElse deg1_H.HasValue OrElse deg1_Dur.HasValue OrElse deg1_Max.HasValue Then
                         If Not (deg1_D.HasValue AndAlso deg1_H.HasValue AndAlso deg1_Dur.HasValue AndAlso deg1_Max.HasValue) Then
-                            erroLinha &= "Degelo 1 possui campos incompletos (todos os 4 campos de data, hora, duração e máx devem ser preenchidos). "
+                            erroLinha &= "Degelo 1 possui campos incompletos. "
                         Else
                             Dim dtDeg = deg1_D.Value.Date.Add(deg1_H.Value)
-                            If dtDeg < inicioCiclo Then
+                            If dtDeg < inicioReferencia Then
                                 erroLinha &= $"Degelo 1 inicia em {dtDeg.ToString("dd/MM/yyyy HH:mm")}, que é anterior ao início do ciclo. "
                             End If
                             ciclo.Degelo1_Data = deg1_D
@@ -335,7 +340,7 @@ Public Class FrmImportarQualidade
                             erroLinha &= "Degelo 2 possui campos incompletos. "
                         Else
                             Dim dtDeg = deg2_D.Value.Date.Add(deg2_H.Value)
-                            If dtDeg < inicioCiclo Then
+                            If dtDeg < inicioReferencia Then
                                 erroLinha &= $"Degelo 2 inicia em {dtDeg.ToString("dd/MM/yyyy HH:mm")}, que é anterior ao início do ciclo. "
                             End If
                             ciclo.Degelo2_Data = deg2_D
@@ -356,7 +361,7 @@ Public Class FrmImportarQualidade
                             erroLinha &= "Degelo 3 possui campos incompletos. "
                         Else
                             Dim dtDeg = deg3_D.Value.Date.Add(deg3_H.Value)
-                            If dtDeg < inicioCiclo Then
+                            If dtDeg < inicioReferencia Then
                                 erroLinha &= $"Degelo 3 inicia em {dtDeg.ToString("dd/MM/yyyy HH:mm")}, que é anterior ao início do ciclo. "
                             End If
                             ciclo.Degelo3_Data = deg3_D
@@ -408,7 +413,7 @@ Public Class FrmImportarQualidade
                                        .Linha = c.RowIndex,
                                        .Câmara = c.Camara,
                                        .Carregamento = c.DataCarregamento.ToString("dd/MM/yyyy") & " " & c.HoraCarregamento.ToString("hh\:mm"),
-                                       .Início = c.DataInicio.ToString("dd/MM/yyyy") & " " & c.HoraInicio.ToString("hh\:mm"),
+                                       .Início = If(c.TemInicio, c.DataInicio.Value.ToString("dd/MM/yyyy") & " " & c.HoraInicio.Value.ToString("hh\:mm"), "N/I"),
                                        .Fim = c.DataFim.ToString("dd/MM/yyyy") & " " & c.HoraFim.ToString("hh\:mm")
                                    }).ToList()
             

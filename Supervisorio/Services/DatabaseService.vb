@@ -220,6 +220,20 @@ Public Class DatabaseService
         Return tabela
     End Function
 
+    ' Verifica se ja existe leitura gravada para o sensorId e dataHora especificados.
+    Public Function ExisteLeitura(sensorId As Integer, dataHora As DateTime) As Boolean
+        Using conn = CriarConexao()
+            conn.Open()
+            Using cmd = conn.CreateCommand()
+                cmd.CommandText = "SELECT COUNT(1) FROM leituras WHERE sensor_id = @sid AND data_hora = @dt"
+                cmd.Parameters.AddWithValue("@sid", sensorId)
+                cmd.Parameters.AddWithValue("@dt", dataHora.ToString("yyyy-MM-dd HH:mm:ss"))
+                Dim count = Convert.ToInt32(cmd.ExecuteScalar())
+                Return count > 0
+            End Using
+        End Using
+    End Function
+
     ' --- MÉTODOS DE SEGURANÇA E AUXILIARES ---
     Public Shared Function GerarSalt() As String
         Dim bytes(15) As Byte

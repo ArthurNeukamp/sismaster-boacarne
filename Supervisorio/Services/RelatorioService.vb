@@ -42,20 +42,42 @@ Public Class RelatorioService
 
         Directory.CreateDirectory(Path.GetDirectoryName(destino))
 
-        ' Montar lista de pares [data_hora formatada, temperatura] a partir do DataTable
-        Dim leituras As New List(Of String())
+        ' Montar lista de pares [data_hora formatada, temperatura] a partir do DataTable, ordenando estritamente por DateTime real
+        Dim listaTemp As New List(Of Tuple(Of DateTime, String, String))()
         For Each row As DataRow In dados.Rows
-            leituras.Add(New String() {
-                If(row("data_hora_fmt")?.ToString(), ""),
-                CDbl(row("temperatura")).ToString("F1")
-            })
+            Dim dtVal As DateTime
+            Dim dhStr As String = If(row.Table.Columns.Contains("data_hora") AndAlso row("data_hora") IsNot DBNull.Value, row("data_hora").ToString(), "")
+            Dim fmtStr As String = If(row.Table.Columns.Contains("data_hora_fmt") AndAlso row("data_hora_fmt") IsNot DBNull.Value, row("data_hora_fmt").ToString(), "")
+            
+            If Not DateTime.TryParse(dhStr, dtVal) Then
+                DateTime.TryParse(fmtStr, dtVal)
+            End If
+            
+            If String.IsNullOrWhiteSpace(fmtStr) Then
+                fmtStr = dtVal.ToString("dd/MM/yyyy HH:mm")
+            End If
+            
+            Dim tempVal As Double = 0.0
+            If row.Table.Columns.Contains("temperatura") AndAlso row("temperatura") IsNot DBNull.Value Then
+                Double.TryParse(row("temperatura").ToString(), tempVal)
+            End If
+            
+            listaTemp.Add(New Tuple(Of DateTime, String, String)(dtVal, fmtStr, tempVal.ToString("F1")))
+        Next
+
+        ' Ordenação cronológica garantida por DateTime real
+        listaTemp = listaTemp.OrderBy(Function(x) x.Item1).ToList()
+
+        Dim leituras As New List(Of String())()
+        For Each item In listaTemp
+            leituras.Add(New String() {item.Item2, item.Item3})
         Next
 
         ' Calcular nLinha (colunas por página) dinamicamente baseando-se no total de registros.
         ' 38 registros cabem verticalmente em uma página A4 sob o cabeçalho/rodapé.
         Dim nLinha As Integer = 1
         Dim totalRegistros = leituras.Count
-        Dim maxRowsPerPage = 38
+        Dim maxRowsPerPage = 42
         
         If totalRegistros <= maxRowsPerPage Then
             nLinha = 1
@@ -67,104 +89,105 @@ Public Class RelatorioService
             nLinha = 4
         End If
 
-        ' Capturar variáveis de escopo para uso dentro dos lambdas
         Dim cfg      = _config
         Dim dadosPdf = leituras
         Dim nSensor  = nomeSensor
         Dim dtIni    = dataInicio
         Dim dtFim2   = dataFim
 
+        Dim total = dadosPdf.Count
+        Dim pageSize = nLinha * maxRowsPerPage
+        Dim totalPages = Math.Max(1, CInt(Math.Ceiling(total / CDbl(pageSize))))
+
         Document.Create(Sub(container)
-            container.Page(Sub(page)
+            For p = 0 To totalPages - 1
+                Dim pageIdx = p
+                Dim startIdx = pageIdx * pageSize
+                Dim countOnPage = Math.Min(total - startIdx, pageSize)
 
-                page.Size(PageSizes.A4)
-                page.Margin(1.5, Unit.Centimetre)
-                page.DefaultTextStyle(Function(x) x.FontSize(8).FontFamily("Arial"))
+                container.Page(Sub(page)
+                    page.Size(PageSizes.A4)
+                    page.Margin(1.5, Unit.Centimetre)
+                    page.DefaultTextStyle(Function(x) x.FontSize(8).FontFamily("Arial"))
 
-                ' page.Header() retorna IContainer; encadeamos Column para múltiplas linhas
-                page.Header().Column(Sub(col)
-                    col.Item().Row(Sub(row)
-                        Dim logoBytes = ObterLogoBytes()
-                        If logoBytes IsNot Nothing Then
-                            row.ConstantItem(2.5, Unit.Centimetre) _
-                               .Image(logoBytes)
-                            row.ConstantItem(0.4, Unit.Centimetre) ' Espaço elegante após o logo
-                        ElseIf File.Exists(cfg.LogoPath) Then
-                            row.ConstantItem(2.5, Unit.Centimetre) _
-                               .Image(cfg.LogoPath)
-                            row.ConstantItem(0.4, Unit.Centimetre) ' Espaço elegante após o logo
-                        End If
-                        row.RelativeItem().Column(Sub(c)
-                            c.Item().Text(cfg.NomeCliente) _
-                             .FontSize(13).Bold().FontColor(Color.FromRGB(30, 64, 115))
-                            c.Item().Text(cfg.NomeInstalacao) _
-                             .FontSize(9).FontColor(Colors.Grey.Darken2)
-                            c.Item().Text("Sensor: " & nSensor).FontSize(9).Bold()
-                        End Sub)
-                        row.ConstantItem(4.5, Unit.Centimetre).Column(Sub(c)
-                            c.Item().Text("De: " & dtIni.ToString("dd/MM/yyyy HH:mm"))
-                            c.Item().Text("Até: " & dtFim2.ToString("dd/MM/yyyy HH:mm"))
-                            c.Item().Text("Gerado: " & DateTime.Now.ToString("dd/MM/yyyy HH:mm"))
-                            c.Item().Text("Total: " & dadosPdf.Count.ToString("N0") & " registros")
-                        End Sub)
-                    End Sub)
-                    col.Item().PaddingTop(4).LineHorizontal(1) _
-                       .LineColor(Color.FromRGB(30, 64, 115))
-                End Sub)
-
-                ' page.Content() retorna IContainer; encadeamos Table diretamente
-                page.Content().PaddingVertical(6).Table(Sub(tbl)
-
-                    Dim azul    = Color.FromRGB(30, 64, 115)
-                    Dim corSep  = Color.FromRGB(120, 145, 185)  ' divisor entre grupos
-                    Dim sepHdr  = Color.FromRGB(180, 200, 230)  ' divisor no cabeçalho
-
-                    tbl.ColumnsDefinition(Sub(cols)
-                        For i = 1 To nLinha
-                            cols.RelativeColumn(3)
-                            cols.RelativeColumn(1.3)
-                        Next
-                    End Sub)
-
-                    tbl.Header(Sub(h)
-                        For i = 1 To nLinha
-                            If i > 1 Then
-                                h.Cell().Background(azul).BorderLeft(1.5).BorderColor(sepHdr) _
-                                 .Padding(3).AlignCenter().Text("Data / Hora") _
-                                 .FontColor(Colors.White).Bold().FontSize(7.5)
-                            Else
-                                h.Cell().Background(azul) _
-                                 .Padding(3).AlignCenter().Text("Data / Hora") _
-                                 .FontColor(Colors.White).Bold().FontSize(7.5)
+                    ' Cabeçalho da Folha
+                    page.Header().Column(Sub(col)
+                        col.Item().Row(Sub(row)
+                            Dim logoBytes = ObterLogoBytes()
+                            If logoBytes IsNot Nothing Then
+                                row.ConstantItem(2.5, Unit.Centimetre).Image(logoBytes)
+                                row.ConstantItem(0.4, Unit.Centimetre)
+                            ElseIf File.Exists(cfg.LogoPath) Then
+                                row.ConstantItem(2.5, Unit.Centimetre).Image(cfg.LogoPath)
+                                row.ConstantItem(0.4, Unit.Centimetre)
                             End If
-                            h.Cell().Background(azul) _
-                             .Padding(3).AlignCenter().Text("Temp (°C)") _
-                             .FontColor(Colors.White).Bold().FontSize(7.5)
-                        Next
+                            row.RelativeItem().Column(Sub(c)
+                                c.Item().Text(cfg.NomeCliente).FontSize(13).Bold().FontColor(Color.FromRGB(30, 64, 115))
+                                c.Item().Text(cfg.NomeInstalacao).FontSize(9).FontColor(Colors.Grey.Darken2)
+                                c.Item().Text("Sensor: " & nSensor).FontSize(9).Bold()
+                            End Sub)
+                            row.ConstantItem(4.5, Unit.Centimetre).Column(Sub(c)
+                                c.Item().Text("De: " & dtIni.ToString("dd/MM/yyyy HH:mm"))
+                                c.Item().Text("Até: " & dtFim2.ToString("dd/MM/yyyy HH:mm"))
+                                c.Item().Text("Gerado: " & DateTime.Now.ToString("dd/MM/yyyy HH:mm"))
+                                c.Item().Text("Total: " & dadosPdf.Count.ToString("N0") & " registros")
+                            End Sub)
+                        End Sub)
+                        col.Item().PaddingTop(4).LineHorizontal(1).LineColor(Color.FromRGB(30, 64, 115))
                     End Sub)
 
-                    Dim total   = dadosPdf.Count
-                    Dim pageSize = nLinha * maxRowsPerPage
-                    Dim totalPages = CInt(Math.Ceiling(total / pageSize))
-                    Dim alterno = False
+                    ' Conteúdo da Tabela da Folha
+                    page.Content().PaddingVertical(6).Table(Sub(tbl)
+                        Dim azul   = Color.FromRGB(30, 64, 115)
+                        Dim corSep = Color.FromRGB(120, 145, 185)
+                        Dim sepHdr = Color.FromRGB(180, 200, 230)
 
-                    For p = 0 To totalPages - 1
-                        Dim startIdx = p * pageSize
-                        Dim S = Math.Min(total - startIdx, pageSize)
-                        If S <= 0 Then Exit For
+                        tbl.ColumnsDefinition(Sub(cols)
+                            For i = 1 To nLinha
+                                cols.RelativeColumn(3)
+                                cols.RelativeColumn(1.3)
+                            Next
+                        End Sub)
 
-                        Dim R_actual = CInt(Math.Ceiling(S / nLinha))
+                        tbl.Header(Sub(h)
+                            For i = 1 To nLinha
+                                If i > 1 Then
+                                    h.Cell().Background(azul).BorderLeft(1.5).BorderColor(sepHdr) _
+                                     .Padding(3).AlignCenter().Text("Data / Hora") _
+                                     .FontColor(Colors.White).Bold().FontSize(7.5)
+                                Else
+                                    h.Cell().Background(azul) _
+                                     .Padding(3).AlignCenter().Text("Data / Hora") _
+                                     .FontColor(Colors.White).Bold().FontSize(7.5)
+                                End If
+                                h.Cell().Background(azul) _
+                                 .Padding(3).AlignCenter().Text("Temp (°C)") _
+                                 .FontColor(Colors.White).Bold().FontSize(7.5)
+                            Next
+                        End Sub)
 
-                        For r = 0 To R_actual - 1
-                            Dim bg = If(alterno,
-                                        Color.FromRGB(240, 245, 255),
-                                        Colors.White)
+                        Dim alterno = False
+
+                        ' Preenche estritamente as linhas desta folha específica (Coluna 0 -> Coluna 1 -> Coluna 2 -> Coluna 3)
+                        For r = 0 To maxRowsPerPage - 1
+                            Dim temItemNaLinha As Boolean = False
+                            For col = 0 To nLinha - 1
+                                Dim posNaPag = col * maxRowsPerPage + r
+                                If posNaPag < countOnPage Then
+                                    temItemNaLinha = True
+                                    Exit For
+                                End If
+                            Next
+                            If Not temItemNaLinha Then Exit For
+
+                            Dim bg = If(alterno, Color.FromRGB(240, 245, 255), Colors.White)
                             alterno = Not alterno
 
                             For col = 0 To nLinha - 1
-                                Dim itemIdx = startIdx + col * R_actual + r
+                                Dim itemIdx = startIdx + col * maxRowsPerPage + r
+                                Dim posNaPag = col * maxRowsPerPage + r
 
-                                If itemIdx < total AndAlso col * R_actual + r < S Then
+                                If itemIdx < total AndAlso posNaPag < countOnPage Then
                                     Dim l = dadosPdf(itemIdx)
                                     If col > 0 Then
                                         tbl.Cell().Background(bg).BorderLeft(1.5).BorderColor(corSep) _
@@ -185,29 +208,26 @@ Public Class RelatorioService
                                 End If
                             Next
                         Next
-                    Next
+                    End Sub)
 
-                End Sub)
-
-                ' page.Footer() retorna IContainer; encadeamos Column para linha horizontal + texto
-                page.Footer().Column(Sub(col)
-                    col.Item().LineHorizontal(0.5).LineColor(Colors.Grey.Medium)
-                    col.Item().Row(Sub(row)
-                        Dim textoFooter = cfg.FooterTexto _
-                            .Replace("{DATA}", DateTime.Now.ToString("dd/MM/yyyy")) _
-                            .Replace("{HORA}", DateTime.Now.ToString("HH:mm"))
-                        row.RelativeItem().Text(textoFooter) _
-                           .FontSize(7).FontColor(Colors.Grey.Darken1)
-                        row.ConstantItem(2.5, Unit.Centimetre).Text(Sub(x)
-                            x.Span("Pág. ").FontSize(7)
-                            x.CurrentPageNumber().FontSize(7)
-                            x.Span(" / ").FontSize(7)
-                            x.TotalPages().FontSize(7)
+                    ' Rodapé da Folha
+                    page.Footer().Column(Sub(col)
+                        col.Item().LineHorizontal(0.5).LineColor(Colors.Grey.Medium)
+                        col.Item().Row(Sub(row)
+                            Dim textoFooter = cfg.FooterTexto _
+                                .Replace("{DATA}", DateTime.Now.ToString("dd/MM/yyyy")) _
+                                .Replace("{HORA}", DateTime.Now.ToString("HH:mm"))
+                            row.RelativeItem().Text(textoFooter).FontSize(7).FontColor(Colors.Grey.Darken1)
+                            row.ConstantItem(2.5, Unit.Centimetre).Text(Sub(x)
+                                x.Span("Pág. ").FontSize(7)
+                                x.Span((pageIdx + 1).ToString()).FontSize(7)
+                                x.Span(" / ").FontSize(7)
+                                x.Span(totalPages.ToString()).FontSize(7)
+                            End Sub)
                         End Sub)
                     End Sub)
                 End Sub)
-
-            End Sub)
+            Next
         End Sub).GeneratePdf(destino)
     End Sub
 

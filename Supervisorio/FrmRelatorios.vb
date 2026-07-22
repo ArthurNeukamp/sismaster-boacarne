@@ -80,7 +80,7 @@ Public Class FrmRelatorios
             Dim sensor = CType(cbSensor.SelectedItem, SensorItem)
             Dim dados As DataTable
 
-            ' Se o grupo logado for Administração, mesclar com FAKE (+100) se existirem dados fakes
+            ' Se o grupo logado for Administração, mesclar com FAKE (+100) utilizando chaves arredondadas para match perfeito
             If GrupoLogado = GrupoUsuario.Administracao Then
                 Dim dadosNormal = _db.ConsultarSensor(sensor.Id, dtpInicio.Value, dtpFim.Value)
                 Dim dadosFake   = _db.ConsultarSensor(sensor.Id + 100, dtpInicio.Value, dtpFim.Value)
@@ -90,13 +90,23 @@ Public Class FrmRelatorios
                     Dim dictRows As New System.Collections.Generic.Dictionary(Of String, DataRow)()
                     
                     For Each row As DataRow In dadosNormal.Rows
-                        Dim dh = row("data_hora").ToString()
-                        dictRows(dh) = row
+                        Dim dhRaw = row("data_hora").ToString()
+                        Dim dhKey As String = dhRaw
+                        Dim dtP As DateTime
+                        If DateTime.TryParse(dhRaw, dtP) Then
+                            dhKey = New DateTime(dtP.Year, dtP.Month, dtP.Day, dtP.Hour, dtP.Minute, 0).ToString("yyyy-MM-dd HH:mm:00")
+                        End If
+                        dictRows(dhKey) = row
                     Next
                     
                     For Each row As DataRow In dadosFake.Rows
-                        Dim dh = row("data_hora").ToString()
-                        dictRows(dh) = row
+                        Dim dhRaw = row("data_hora").ToString()
+                        Dim dhKey As String = dhRaw
+                        Dim dtP As DateTime
+                        If DateTime.TryParse(dhRaw, dtP) Then
+                            dhKey = New DateTime(dtP.Year, dtP.Month, dtP.Day, dtP.Hour, dtP.Minute, 0).ToString("yyyy-MM-dd HH:mm:00")
+                        End If
+                        dictRows(dhKey) = row
                     Next
                     
                     For Each kvp In dictRows.OrderBy(Function(x) x.Key)
@@ -146,9 +156,9 @@ Public Class FrmRelatorios
         End If
 
         Dim sensor = CType(cbSensor.SelectedItem, SensorItem)
-        Dim podeGrafico As Boolean = habilitado AndAlso sensor IsNot Nothing AndAlso sensor.Id >= 21 AndAlso sensor.Id <= 27
+        Dim podeGrafico As Boolean = habilitado AndAlso (sensor IsNot Nothing)
         btnGerarGraficoPDF.Enabled = podeGrafico
-        btnGerarGraficoPDF.Visible = sensor IsNot Nothing AndAlso sensor.Id >= 21 AndAlso sensor.Id <= 27
+        btnGerarGraficoPDF.Visible = (sensor IsNot Nothing)
         If podeGrafico Then
             btnGerarGraficoPDF.BackColor                     = _azulPrincipal
             btnGerarGraficoPDF.ForeColor                     = Color.White
@@ -171,7 +181,7 @@ Public Class FrmRelatorios
         For Each row As DataRow In dt.Rows
             Dim dh As DateTime
             If DateTime.TryParse(row("data_hora").ToString(), dh) Then
-                row("data_hora_fmt") = dh.ToString("dd/MM/yyyy HH:mm:ss")
+                row("data_hora_fmt") = dh.ToString("dd/MM/yyyy HH:mm")
             Else
                 row("data_hora_fmt") = row("data_hora").ToString()
             End If
@@ -179,22 +189,26 @@ Public Class FrmRelatorios
     End Sub
 
     Private Sub btnExportarPDF_Click(sender As Object, e As EventArgs) Handles btnExportarPDF.Click
-        If dgvLeituras.RowCount = 0 Then Return
+        Dim dados = CType(dgvLeituras.DataSource, DataTable)
+        If dados Is Nothing OrElse dados.Rows.Count = 0 Then
+            MessageBox.Show("Não há dados para exportar.", "Atenção",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
 
         Dim sensor = CType(cbSensor.SelectedItem, SensorItem)
-        
-        Dim pasta As String = _config.PastaExportacao
-        Dim nomeArquivo As String = "Leituras_" & sensor.Nome & "_" & DateTime.Now.ToString("dd-MM-yyyy_HHmm") & ".pdf"
-        Dim caminhoCompleto As String = System.IO.Path.Combine(pasta, nomeArquivo)
+        Dim pasta  = _config.PastaExportacao
+        Dim nomeArquivo = "Relatorio_" & sensor.Nome & "_" & DateTime.Now.ToString("dd-MM-yyyy_HHmm") & ".pdf"
+        Dim caminhoCompleto = System.IO.Path.Combine(pasta, nomeArquivo)
 
         Cursor = Cursors.WaitCursor
         Try
-            Dim dados = CType(dgvLeituras.DataSource, DataTable)
-            Dim svc   = New RelatorioService(_config)
-            svc.ExportarPDF(dados, caminhoCompleto, sensor.Nome, dtpInicio.Value, dtpFim.Value)
+            Dim relService As New RelatorioService(_config)
+            relService.ExportarPDF(dados, caminhoCompleto, sensor.Nome,
+                                   dtpInicio.Value, dtpFim.Value)
             Process.Start(New ProcessStartInfo(caminhoCompleto) With {.UseShellExecute = True})
         Catch ex As Exception
-            MessageBox.Show("Erro ao gerar PDF: " & ex.Message, "Erro",
+            MessageBox.Show("Erro ao exportar PDF: " & ex.Message, "Erro",
                             MessageBoxButtons.OK, MessageBoxIcon.Error)
         Finally
             Cursor = Cursors.Default
@@ -202,15 +216,16 @@ Public Class FrmRelatorios
     End Sub
 
     Private Sub btnGerarGraficoPDF_Click(sender As Object, e As EventArgs) Handles btnGerarGraficoPDF.Click
-        If dgvLeituras.RowCount = 0 Then Return
-
         Dim sensor = CType(cbSensor.SelectedItem, SensorItem)
-        If sensor Is Nothing OrElse sensor.Id < 21 OrElse sensor.Id > 27 Then Return
+        If sensor Is Nothing Then Return
 
         ' Resolve ID com base nas permissões de visualização do grupo
         Dim querySensorId As Integer = sensor.Id
         If GrupoLogado = GrupoUsuario.Administracao Then
-            querySensorId = sensor.Id + 100
+            Dim dadosFake = _db.ConsultarSensor(sensor.Id + 100, dtpInicio.Value, dtpFim.Value)
+            If dadosFake IsNot Nothing AndAlso dadosFake.Rows.Count > 0 Then
+                querySensorId = sensor.Id + 100
+            End If
         End If
 
         Dim pasta As String = _config.PastaExportacao
@@ -232,8 +247,7 @@ Public Class FrmRelatorios
 
     Private Sub cbSensor_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cbSensor.SelectedIndexChanged
         Dim sensor = CType(cbSensor.SelectedItem, SensorItem)
-        Dim ehCamara = sensor IsNot Nothing AndAlso sensor.Id >= 21 AndAlso sensor.Id <= 27
-        btnGerarGraficoPDF.Visible = ehCamara
+        btnGerarGraficoPDF.Visible = (sensor IsNot Nothing)
         
         ' Limpa o grid e zera o estado até a próxima consulta
         dgvLeituras.DataSource = Nothing

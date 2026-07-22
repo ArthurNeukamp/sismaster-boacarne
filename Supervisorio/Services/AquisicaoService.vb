@@ -185,13 +185,16 @@ Public Class AquisicaoService
                 End If
             End If
 
-            leituras.Add(New LeituraDto With {
-                .DataHora = dataColeta,
-                .SensorId = sid + 100,
-                .Nome = nomeConfigurado,
-                .Temperatura = Math.Round(fakeTemp, 1),
-                .ClpOk = sensorClpOk
-            })
+            Dim fakeSensorId As Integer = sid + 100
+            If Not _db.ExisteLeitura(fakeSensorId, dataColeta) Then
+                leituras.Add(New LeituraDto With {
+                    .DataHora = dataColeta,
+                    .SensorId = fakeSensorId,
+                    .Nome = nomeConfigurado,
+                    .Temperatura = Math.Round(fakeTemp, 1),
+                    .ClpOk = sensorClpOk
+                })
+            End If
         Next
         Return leituras
     End Function

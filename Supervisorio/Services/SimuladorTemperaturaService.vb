@@ -70,44 +70,66 @@ Public Class SimuladorTemperaturaService
         Directory.CreateDirectory(pastaDestino)
 
         For Each cycle In ciclos
-            ' 1. Calcular horarios do ciclo (dinâmico com base no DataFim/HoraFim do Excel)
             Dim carregamento = cycle.DataCarregamento.Date.Add(cycle.HoraCarregamento)
-            Dim inicio = cycle.DataInicio.Date.Add(cycle.HoraInicio)
+            Dim temInicio As Boolean = cycle.TemInicio
+            Dim inicio = If(temInicio, cycle.DataInicio.Value.Date.Add(cycle.HoraInicio.Value), carregamento)
+            Dim tempInicialRef As Double = If(temInicio, cycle.TempInicial.Value, cycle.TempCarregamento)
             Dim fim = cycle.DataFim.Date.Add(cycle.HoraFim)
             Dim duracaoHoras As Double = (fim - carregamento).TotalHours
 
             ' 2. Mapeamento para buscar os timestamps reais do sensor físico correspondente (ID FAKE - 100)
             Dim physicalSensorId As Integer = cycle.SensorId - 100
             Dim intervalMinutes As Double = 10.0 ' Intervalo padrão
+            Dim timestamps As New List(Of DateTime)()
+
             Try
                 Dim dtFisico = db.ConsultarSensor(physicalSensorId, carregamento, fim)
-                If dtFisico IsNot Nothing AndAlso dtFisico.Rows.Count >= 2 Then
-                    Dim dtVal1 As DateTime
-                    Dim dtVal2 As DateTime
-                    If DateTime.TryParse(dtFisico.Rows(0)("data_hora")?.ToString(), dtVal1) AndAlso
-                       DateTime.TryParse(dtFisico.Rows(1)("data_hora")?.ToString(), dtVal2) Then
-                        Dim diff = (dtVal2 - dtVal1).TotalMinutes
-                        If diff > 0 Then
-                            intervalMinutes = Math.Round(diff)
+                If dtFisico IsNot Nothing AndAlso dtFisico.Rows.Count > 0 Then
+                    ' Extrai as datas/horas exatas gravadas no banco pelo sensor físico real
+                    Dim setHorarios As New HashSet(Of DateTime)()
+                    For Each row As DataRow In dtFisico.Rows
+                        Dim dtParsed As DateTime
+                        If DateTime.TryParse(row("data_hora")?.ToString(), dtParsed) Then
+                            Dim dtRedonda As New DateTime(dtParsed.Year, dtParsed.Month, dtParsed.Day, dtParsed.Hour, dtParsed.Minute, 0)
+                            If Not setHorarios.Contains(dtRedonda) Then
+                                setHorarios.Add(dtRedonda)
+                                timestamps.Add(dtRedonda)
+                            End If
+                        End If
+                    Next
+
+                    ' Detectar o intervalo médio entre as coletas reais para prosseguir se o ciclo avançar além do último dado real
+                    If dtFisico.Rows.Count >= 2 Then
+                        Dim dtVal1, dtVal2 As DateTime
+                        If DateTime.TryParse(dtFisico.Rows(0)("data_hora")?.ToString(), dtVal1) AndAlso
+                           DateTime.TryParse(dtFisico.Rows(1)("data_hora")?.ToString(), dtVal2) Then
+                            Dim diff = (dtVal2 - dtVal1).TotalMinutes
+                            If diff > 0 Then intervalMinutes = Math.Round(diff)
                         End If
                     End If
                 End If
             Catch ex As Exception
-                LogService.GravarErro("SIMULADOR", $"Erro ao detectar intervalo do sensor {physicalSensorId}: {ex.Message}")
+                LogService.GravarErro("SIMULADOR", $"Erro ao carregar timestamps reais do sensor {physicalSensorId}: {ex.Message}")
             End Try
 
-            ' Se o intervalo detectado for fora do padrão (menor que 1 min ou maior que 4h), usa 10 min
-            If intervalMinutes < 1.0 OrElse intervalMinutes > 240.0 Then
-                intervalMinutes = 10.0
-            End If
+            If intervalMinutes < 1.0 OrElse intervalMinutes > 240.0 Then intervalMinutes = 10.0
 
-            ' Gera a lista completa de timestamps para o período usando o intervalo detectado
-            Dim timestamps As New List(Of DateTime)()
-            Dim totalMinutos As Double = duracaoHoras * 60.0
-            Dim totalPassos As Integer = CInt(Math.Floor(totalMinutos / intervalMinutes))
-            For i = 0 To totalPassos
-                timestamps.Add(carregamento.AddMinutes(i * intervalMinutes))
-            Next
+            ' Se não havia dados reais no banco para o período (ou para estender até o Fim do ciclo), completa a lista de timestamps
+            If timestamps.Count = 0 Then
+                Dim carregamentoRedondo As New DateTime(carregamento.Year, carregamento.Month, carregamento.Day, carregamento.Hour, carregamento.Minute, 0)
+                Dim currTime = carregamentoRedondo
+                While currTime <= fim
+                    timestamps.Add(currTime)
+                    currTime = currTime.AddMinutes(intervalMinutes)
+                End While
+            Else
+                Dim ultimoHorarioReal = timestamps.Last()
+                Dim currTime = ultimoHorarioReal.AddMinutes(intervalMinutes)
+                While currTime <= fim
+                    timestamps.Add(currTime)
+                    currTime = currTime.AddMinutes(intervalMinutes)
+                End While
+            End If
 
             ' 3. Gerar pontos de simulacao correspondentes aos timestamps
             Dim rnd As New Random()
@@ -117,8 +139,27 @@ Public Class SimuladorTemperaturaService
             Dim noiseAmplitude As Double = 0.015 * (intervalMinutes / 10.0)
             Dim lowerBound As Double = Math.Max(2.0, targetTemp - 0.8)
             Dim upperBound As Double = Math.Min(4.0, targetTemp + 0.8)
-            Dim coolingDuration As Double = 1.8333 + (rnd.NextDouble() * 1.0)
-            Dim lagDuration As Double = 0.1 + (rnd.NextDouble() * 0.15)
+
+            ' Seleção randômica do perfil de descida da câmara (0: Exponencial, 1: Sigmoidal/Curva S, 2: Inércia Térmica, 3: Duplo Estágio)
+            Dim profileType As Integer = rnd.Next(0, 4)
+            Dim coolingDuration As Double
+            Dim lagDuration As Double
+
+            Select Case profileType
+                Case 0 ' Exponencial Padrão
+                    coolingDuration = 1.8 + (rnd.NextDouble() * 0.7)
+                    lagDuration = 0.1 + (rnd.NextDouble() * 0.15)
+                Case 1 ' Sigmoidal / Curva S
+                    coolingDuration = 2.2 + (rnd.NextDouble() * 0.8)
+                    lagDuration = 0.15 + (rnd.NextDouble() * 0.2)
+                Case 2 ' Inércia Térmica / Lag Prolongado (Retém de 20 a 45 min)
+                    coolingDuration = 2.5 + (rnd.NextDouble() * 0.8)
+                    lagDuration = 0.35 + (rnd.NextDouble() * 0.4)
+                Case Else ' Duplo Estágio com Ciclagem
+                    coolingDuration = 2.4 + (rnd.NextDouble() * 0.6)
+                    lagDuration = 0.15 + (rnd.NextDouble() * 0.2)
+            End Select
+
             Dim kFactor As Double = 1.2 + (rnd.NextDouble() * 1.0)
 
             ' Preparar dados dos degelos para busca rápida no loop de pontos
@@ -203,20 +244,20 @@ Public Class SimuladorTemperaturaService
                         currentVelocity = 0.0
                     End If
                 Else
-                    If ptTime < inicio Then
-                        ' Descida da TempCarregamento para TempInicial no carregamento
+                    If temInicio AndAlso ptTime < inicio Then
+                        ' Descida da TempCarregamento para TempInicial no carregamento (Fase 1)
                         Dim t_hours_carreg As Double = (ptTime - carregamento).TotalHours
                         Dim loadingDuration As Double = (inicio - carregamento).TotalHours
                         Dim t_norm As Double = t_hours_carreg / loadingDuration
                         Dim exponent As Double = 1.3 + (rnd.NextDouble() * 0.6)
                         Dim decay As Double = Math.Pow(Math.Max(0.0, 1.0 - t_norm), exponent)
-                        Dim baseTemp As Double = cycle.TempInicial + (cycle.TempCarregamento - cycle.TempInicial) * decay
+                        Dim baseTemp As Double = tempInicialRef + (cycle.TempCarregamento - tempInicialRef) * decay
 
                         Dim stepScale As Double = intervalMinutes / 10.0
                         wobbleVelocity = 0.85 * wobbleVelocity + ((rnd.NextDouble() * 0.3) - 0.15) * stepScale
                         wobble = wobble + wobbleVelocity
 
-                        Dim wobbleScale As Double = (cycle.TempCarregamento - cycle.TempInicial) * 0.2
+                        Dim wobbleScale As Double = (cycle.TempCarregamento - tempInicialRef) * 0.2
                         Dim dampFactor As Double = Math.Max(0.0, 1.0 - t_norm)
                         Dim finalWobble As Double = wobble * dampFactor * wobbleScale
 
@@ -226,37 +267,39 @@ Public Class SimuladorTemperaturaService
                         currentTemp = temp
                         currentVelocity = 0.0
                     Else
+                        ' Bypass ou Fase 2: Transição de descida suave (1h50 a 2h50) partindo de tempInicialRef (TempInicial ou TempCarregamento)
                         Dim t_hours As Double = (ptTime - inicio).TotalHours
                         
                         If t_hours <= lagDuration Then
-                            ' Período de lag logo após o início: mantém próximo da TempInicial com ruído negativo
-                            Dim noise = (rnd.NextDouble() * -1.0)
-                            temp = cycle.TempInicial + noise
+                            ' Período de lag logo após o início: oscilação suave em torno da temperatura inicial
+                            Dim noise = (rnd.NextDouble() * 0.6) - 0.3
+                            temp = tempInicialRef + noise
                             currentTemp = temp
                             currentVelocity = 0.0
                         ElseIf t_hours <= coolingDuration Then
-                            ' Período de descida contínua pós-início rumo à estabilização (aproximadamente 2h)
+                            ' Período de descida contínua pós-início rumo à estabilização
                             Dim t_norm As Double = (t_hours - lagDuration) / (coolingDuration - lagDuration)
-                            Dim decay As Double = Math.Exp(-kFactor * t_norm * 3.5)
-                            Dim baseTemp As Double = targetTemp + (cycle.TempInicial - targetTemp) * decay
+                            Dim decay As Double
 
-                            ' Reset do wobble e velocidade no primeiro passo da transição para limpar variações acumuladas no carregamento
-                            If t_hours - lagDuration <= (intervalMinutes / 60.0) Then
-                                wobble = 0.0
-                                wobbleVelocity = 0.0
-                            End If
+                            Select Case profileType
+                                Case 0 ' Exponencial Padrão
+                                    decay = Math.Exp(-kFactor * t_norm * 3.5)
+                                Case 1 ' Curva S (Sigmoidal)
+                                    Dim s_factor As Double = t_norm * t_norm * (3.0 - 2.0 * t_norm)
+                                    decay = 1.0 - s_factor
+                                Case 2 ' Inércia / Convexa
+                                    decay = Math.Pow(Math.Max(0.0, 1.0 - t_norm), 1.8)
+                                Case Else ' Duplo Estágio com Ciclagem
+                                    Dim base_decay As Double = Math.Exp(-kFactor * t_norm * 3.0)
+                                    Dim bump As Double = 0.18 * Math.Sin(t_norm * Math.PI * 2.0)
+                                    decay = Math.Min(1.0, Math.Max(0.0, base_decay + bump))
+                            End Select
 
-                            Dim stepScale As Double = intervalMinutes / 10.0
-                            wobbleVelocity = 0.85 * wobbleVelocity + ((rnd.NextDouble() * 0.3) - 0.15) * stepScale
-                            wobble = wobble + wobbleVelocity
-
-                            ' Redução expressiva do ruído e ondulações (wobbleScale reduzida a 0.05 e ruído de +/-0.4 °C) nesta transição
-                            Dim wobbleScale As Double = (cycle.TempInicial - targetTemp) * 0.05
-                            Dim dampFactor As Double = Math.Max(0.0, 1.0 - t_norm)
-                            Dim finalWobble As Double = wobble * dampFactor * wobbleScale
+                            Dim baseTemp As Double = targetTemp + (tempInicialRef - targetTemp) * decay
 
                             Dim noise = (rnd.NextDouble() * 0.8) - 0.4
-                            temp = baseTemp + finalWobble + noise
+                            temp = baseTemp + noise
+                            temp = Math.Max(2.0, temp)
                             currentTemp = temp
                             currentVelocity = 0.0
                         Else
@@ -325,38 +368,14 @@ Public Class SimuladorTemperaturaService
 
             Dim plt As New ScottPlot.Plot(2500, 1050)
             
+            Dim isMaturacao = IsSensorMaturacao(cycle.SensorId)
             Dim nSensor = cycle.Camara.Trim()
-            plt.Title($"GRÁFICO DE MATURAÇÃO - {nSensor.ToUpper()}", size:=30, color:=System.Drawing.Color.FromArgb(30, 64, 115), bold:=True)
+            Dim tituloGrafico = If(isMaturacao, $"GRÁFICO DE MATURAÇÃO - {nSensor.ToUpper()}", $"GRÁFICO - {nSensor.ToUpper()}")
+            plt.Title(tituloGrafico, size:=30, color:=System.Drawing.Color.FromArgb(30, 64, 115), bold:=True)
             
             plt.AddScatter(datesSalvas, tempsSalvas, color:=System.Drawing.Color.FromArgb(30, 64, 115), lineWidth:=5, markerSize:=0)
             
-            Dim stepHours As Double = 1.0
-            Dim tickCount As Integer = CInt(Math.Floor(duracaoHoras / stepHours)) + 1
-            Dim tickPositions(tickCount - 1) As Double
-            Dim tickLabels(tickCount - 1) As String
-            For k = 0 To tickCount - 1
-                Dim tickTime = carregamento.AddHours(k * stepHours)
-                tickPositions(k) = tickTime.ToOADate()
-                tickLabels(k) = tickTime.ToString("dd/MM/yyyy HH:mm")
-            Next
-            
-            plt.XTicks(tickPositions, tickLabels)
-            plt.XAxis.TickLabelStyle(rotation:=45, fontSize:=15.0F)
-            plt.SetAxisLimitsX(datesSalvas(0), datesSalvas(totalPontosSalvos - 1))
-            plt.Margins(x:=0, y:=0.1)
-
-            Dim yTickPositions As New System.Collections.Generic.List(Of Double)()
-            Dim yTickLabels As New System.Collections.Generic.List(Of String)()
-            Dim maxLimit As Integer = CInt(Math.Ceiling(Math.Max(tempsSalvas.Max(), 4.0) / 2.0) * 2.0) + 2
-            For yVal = 0 To maxLimit Step 2
-                yTickPositions.Add(yVal)
-                yTickLabels.Add(yVal.ToString() & " °C")
-            Next
-            plt.YTicks(yTickPositions.ToArray(), yTickLabels.ToArray())
-            plt.YAxis.TickLabelStyle(fontSize:=16.0F)
-            plt.SetAxisLimitsY(0, maxLimit)
-            plt.Layout(left:=220, bottom:=160)
-            plt.Grid(True, color:=System.Drawing.Color.FromArgb(235, 235, 235))
+            ConfigurarEixosGrafico(plt, carregamento, fim, datesSalvas, tempsSalvas)
             
             Dim tempPngPath = Path.Combine(Path.GetTempPath(), $"temp_chart_{Guid.NewGuid().ToString()}.png")
             plt.SaveFig(tempPngPath)
@@ -399,7 +418,8 @@ Public Class SimuladorTemperaturaService
                                 End Sub)
 
                                 row.ConstantItem(5.5, Unit.Centimetre).Column(Sub(c)
-                                    c.Item().Text($"Câmara: {nSensor}").Bold()
+                                    Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
+                                    c.Item().Text($"{rotuloAmbiente}: {nSensor}").Bold()
                                     c.Item().Text($"Início: {inicio.ToString("dd/MM/yyyy HH:mm")}")
                                     c.Item().Text($"Fim: {fim.ToString("dd/MM/yyyy HH:mm")}")
                                 End Sub)
@@ -417,7 +437,8 @@ Public Class SimuladorTemperaturaService
 
                             col.Item().Row(Sub(row)
                                 row.RelativeItem().Column(Sub(c)
-                                    c.Item().PaddingBottom(2).Text("Métricas da Maturação").Bold().FontSize(9.0).FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+                                    Dim tituloMetricas = If(isMaturacao, "Métricas da Maturação", "Métricas de Temperatura")
+                                    c.Item().PaddingBottom(2).Text(tituloMetricas).Bold().FontSize(9.0).FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
                                     
                                     c.Item().Table(Sub(tbl)
                                         tbl.ColumnsDefinition(Sub(cols)
@@ -425,10 +446,11 @@ Public Class SimuladorTemperaturaService
                                             cols.RelativeColumn(1.5F)
                                         End Sub)
 
-                                        AddTableCell(tbl, "Câmara", nSensor, True)
-                                        AddTableCell(tbl, "Data de Início", cycle.DataInicio.ToString("dd/MM/yyyy"), False)
-                                        AddTableCell(tbl, "Hora de Início", cycle.HoraInicio.ToString("hh\:mm"), True)
-                                        AddTableCell(tbl, "Temp. Inicial", cycle.TempInicial.ToString("F1") & " °C", False)
+                                        Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
+                                        AddTableCell(tbl, rotuloAmbiente, nSensor, True)
+                                        AddTableCell(tbl, "Data de Início", If(cycle.TemInicio, cycle.DataInicio.Value.ToString("dd/MM/yyyy"), "N/I"), False)
+                                        AddTableCell(tbl, "Hora de Início", If(cycle.TemInicio, cycle.HoraInicio.Value.ToString("hh\:mm"), "N/I"), True)
+                                        AddTableCell(tbl, "Temp. Inicial", If(cycle.TemInicio, cycle.TempInicial.Value.ToString("F1") & " °C", "N/I"), False)
                                         AddTableCell(tbl, "Temp. Mínima", tempMin.ToString("F1") & " °C", True)
                                         AddTableCell(tbl, "Temp. Máxima", tempMax.ToString("F1") & " °C", False)
                                         AddTableCell(tbl, "Temp. Média", tempMed.ToString("F1") & " °C", True)
@@ -502,6 +524,10 @@ Public Class SimuladorTemperaturaService
         tbl.Cell().Background(bg).Padding(4).BorderBottom(0.5).BorderColor(Colors.Grey.Lighten2).Text(value)
     End Sub
 
+    Private Shared Function IsSensorMaturacao(sensorId As Integer) As Boolean
+        Return (sensorId >= 21 AndAlso sensorId <= 27) OrElse (sensorId >= 121 AndAlso sensorId <= 127)
+    End Function
+
     Public Sub GerarGraficoPDFExclusivo(sensorId As Integer, camaraNome As String, inicio As DateTime, fim As DateTime, db As DatabaseService, caminhoPdf As String)
         Dim dadosSalvos = db.ConsultarSensor(sensorId, inicio, fim)
         Dim totalPontosSalvos = dadosSalvos.Rows.Count
@@ -524,60 +550,14 @@ Public Class SimuladorTemperaturaService
 
         Dim plt As New ScottPlot.Plot(2500, 1050)
         
+        Dim isMaturacao = IsSensorMaturacao(sensorId)
         Dim nSensor = camaraNome.Trim()
-        plt.Title($"GRÁFICO DE MATURAÇÃO - {nSensor.ToUpper()}", size:=30, color:=System.Drawing.Color.FromArgb(30, 64, 115), bold:=True)
+        Dim tituloGrafico = If(isMaturacao, $"GRÁFICO DE MATURAÇÃO - {nSensor.ToUpper()}", $"GRÁFICO - {nSensor.ToUpper()}")
+        plt.Title(tituloGrafico, size:=30, color:=System.Drawing.Color.FromArgb(30, 64, 115), bold:=True)
         
         plt.AddScatter(datesSalvas, tempsSalvas, color:=System.Drawing.Color.FromArgb(30, 64, 115), lineWidth:=5, markerSize:=0)
         
-        Dim duracaoHoras As Double = (fim - inicio).TotalHours
-        Dim stepHours As Double = 1.0
-        If duracaoHoras > 24.0 Then
-            stepHours = Math.Ceiling(duracaoHoras / 24.0)
-            If stepHours > 1.0 AndAlso stepHours <= 2.0 Then
-                stepHours = 2.0
-            ElseIf stepHours > 2.0 AndAlso stepHours <= 3.0 Then
-                stepHours = 3.0
-            ElseIf stepHours > 3.0 AndAlso stepHours <= 4.0 Then
-                stepHours = 4.0
-            ElseIf stepHours > 4.0 AndAlso stepHours <= 6.0 Then
-                stepHours = 6.0
-            ElseIf stepHours > 6.0 AndAlso stepHours <= 12.0 Then
-                stepHours = 12.0
-            ElseIf stepHours > 12.0 AndAlso stepHours <= 24.0 Then
-                stepHours = 24.0
-            ElseIf stepHours > 24.0 AndAlso stepHours <= 48.0 Then
-                stepHours = 48.0
-            ElseIf stepHours > 48.0 Then
-                stepHours = Math.Ceiling(stepHours / 24.0) * 24.0
-            End If
-        End If
-        
-        Dim tickCount As Integer = CInt(Math.Floor(duracaoHoras / stepHours)) + 1
-        Dim tickPositions(tickCount - 1) As Double
-        Dim tickLabels(tickCount - 1) As String
-        For k = 0 To tickCount - 1
-            Dim tickTime = inicio.AddHours(k * stepHours)
-            tickPositions(k) = tickTime.ToOADate()
-            tickLabels(k) = tickTime.ToString("dd/MM/yyyy HH:mm")
-        Next
-        
-        plt.XTicks(tickPositions, tickLabels)
-        plt.XAxis.TickLabelStyle(rotation:=45, fontSize:=15.0F)
-        plt.SetAxisLimitsX(datesSalvas(0), datesSalvas(totalPontosSalvos - 1))
-        plt.Margins(x:=0, y:=0.1)
-
-        Dim yTickPositions As New System.Collections.Generic.List(Of Double)()
-        Dim yTickLabels As New System.Collections.Generic.List(Of String)()
-        Dim maxLimit As Integer = CInt(Math.Ceiling(Math.Max(tempsSalvas.Max(), 4.0) / 2.0) * 2.0) + 2
-        For yVal = 0 To maxLimit Step 2
-            yTickPositions.Add(yVal)
-            yTickLabels.Add(yVal.ToString() & " °C")
-        Next
-        plt.YTicks(yTickPositions.ToArray(), yTickLabels.ToArray())
-        plt.YAxis.TickLabelStyle(fontSize:=16.0F)
-        plt.SetAxisLimitsY(0, maxLimit)
-        plt.Layout(left:=220, bottom:=160)
-        plt.Grid(True, color:=System.Drawing.Color.FromArgb(235, 235, 235))
+        ConfigurarEixosGrafico(plt, inicio, fim, datesSalvas, tempsSalvas)
         
         Dim tempPngPath = Path.Combine(Path.GetTempPath(), $"temp_chart_{Guid.NewGuid().ToString()}.png")
         plt.SaveFig(tempPngPath)
@@ -617,7 +597,8 @@ Public Class SimuladorTemperaturaService
                             End Sub)
 
                             row.ConstantItem(5.5, Unit.Centimetre).Column(Sub(c)
-                                c.Item().Text($"Câmara: {nSensor}").Bold()
+                                Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
+                                c.Item().Text($"{rotuloAmbiente}: {nSensor}").Bold()
                                 c.Item().Text($"Início: {inicio.ToString("dd/MM/yyyy HH:mm")}")
                                 c.Item().Text($"Fim: {fim.ToString("dd/MM/yyyy HH:mm")}")
                             End Sub)
@@ -635,7 +616,8 @@ Public Class SimuladorTemperaturaService
 
                         col.Item().Row(Sub(row)
                             row.RelativeItem().Column(Sub(c)
-                                c.Item().PaddingBottom(2).Text("Métricas da Maturação").Bold().FontSize(9.0).FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+                                Dim tituloMetricas = If(isMaturacao, "Métricas da Maturação", "Métricas de Temperatura")
+                                c.Item().PaddingBottom(2).Text(tituloMetricas).Bold().FontSize(9.0).FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
                                 
                                 c.Item().Table(Sub(tbl)
                                     tbl.ColumnsDefinition(Sub(cols)
@@ -643,7 +625,8 @@ Public Class SimuladorTemperaturaService
                                         cols.RelativeColumn(1.5F)
                                     End Sub)
 
-                                    AddTableCell(tbl, "Câmara", nSensor, True)
+                                    Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
+                                    AddTableCell(tbl, rotuloAmbiente, nSensor, True)
                                     AddTableCell(tbl, "Data de Início", inicio.ToString("dd/MM/yyyy"), False)
                                     AddTableCell(tbl, "Hora de Início", inicio.ToString("HH\:mm"), True)
                                     AddTableCell(tbl, "Temp. Inicial", tempsSalvas(0).ToString("F1") & " °C", False)
@@ -681,6 +664,56 @@ Public Class SimuladorTemperaturaService
             Catch
             End Try
         End Try
+    End Sub
+
+    Private Shared Sub ConfigurarEixosGrafico(plt As ScottPlot.Plot, inicio As DateTime, fim As DateTime, datesSalvas() As Double, tempsSalvas() As Double)
+        Dim duracaoHoras As Double = (fim - inicio).TotalHours
+        Dim stepHours As Double = 1.0
+
+        If duracaoHoras > 96.0 Then
+            ' Para períodos longos (superiores a 4 dias / 96h), escala proporcionalmente
+            Dim diasTotal = duracaoHoras / 24.0
+            If diasTotal <= 7.0 Then
+                stepHours = 2.0
+            ElseIf diasTotal <= 15.0 Then
+                stepHours = 6.0
+            ElseIf diasTotal <= 30.0 Then
+                stepHours = 12.0
+            Else
+                stepHours = Math.Ceiling(diasTotal / 25.0) * 24.0
+            End If
+        Else
+            ' Para períodos normais de maturação (até 4 dias / 96h): sempre de 1h em 1h
+            stepHours = 1.0
+        End If
+
+        Dim tickCount As Integer = CInt(Math.Floor(duracaoHoras / stepHours)) + 1
+        Dim tickPositions(tickCount - 1) As Double
+        Dim tickLabels(tickCount - 1) As String
+        For k = 0 To tickCount - 1
+            Dim tickTime = inicio.AddHours(k * stepHours)
+            tickPositions(k) = tickTime.ToOADate()
+            tickLabels(k) = tickTime.ToString("dd/MM/yyyy HH:mm")
+        Next
+
+        plt.XTicks(tickPositions, tickLabels)
+        plt.XAxis.TickLabelStyle(rotation:=45, fontSize:=15.0F)
+        plt.SetAxisLimitsX(datesSalvas(0), datesSalvas(datesSalvas.Length - 1))
+        plt.Margins(x:=0, y:=0.1)
+
+        ' Configurar Eixo Y (sempre de 2 °C em 2 °C)
+        Dim yTickPositions As New System.Collections.Generic.List(Of Double)()
+        Dim yTickLabels As New System.Collections.Generic.List(Of String)()
+        Dim maxLimit As Integer = CInt(Math.Ceiling(Math.Max(tempsSalvas.Max(), 4.0) / 2.0) * 2.0) + 2
+        For yVal = 0 To maxLimit Step 2
+            yTickPositions.Add(yVal)
+            yTickLabels.Add(yVal.ToString() & " °C")
+        Next
+        plt.YTicks(yTickPositions.ToArray(), yTickLabels.ToArray())
+        plt.YAxis.TickLabelStyle(fontSize:=16.0F)
+        plt.SetAxisLimitsY(0, maxLimit)
+        plt.Layout(left:=220, bottom:=160)
+        plt.Grid(True, color:=System.Drawing.Color.FromArgb(235, 235, 235))
     End Sub
 
 End Class
