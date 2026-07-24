@@ -70,10 +70,11 @@ Public Class SimuladorTemperaturaService
         Directory.CreateDirectory(pastaDestino)
 
         For Each cycle In ciclos
-            Dim carregamento = cycle.DataCarregamento.Date.Add(cycle.HoraCarregamento)
-            Dim temInicio As Boolean = cycle.TemInicio
-            Dim inicio = If(temInicio, cycle.DataInicio.Value.Date.Add(cycle.HoraInicio.Value), carregamento)
-            Dim tempInicialRef As Double = If(temInicio, cycle.TempInicial.Value, cycle.TempCarregamento)
+            Dim temCarregamento As Boolean = cycle.TemCarregamento
+            Dim carregamento As DateTime = If(temCarregamento, cycle.DataCarregamento.Value.Date.Add(cycle.HoraCarregamento.Value), cycle.DataInicio.Date.Add(cycle.HoraInicio))
+            Dim tempCarregamento As Double = If(temCarregamento, cycle.TempCarregamento.Value, cycle.TempInicial)
+            Dim inicio As DateTime = cycle.DataInicio.Date.Add(cycle.HoraInicio)
+            Dim tempInicialRef As Double = cycle.TempInicial
             Dim fim = cycle.DataFim.Date.Add(cycle.HoraFim)
             Dim duracaoHoras As Double = (fim - carregamento).TotalHours
 
@@ -137,8 +138,8 @@ Public Class SimuladorTemperaturaService
             Dim friction As Double = 0.80 + (rnd.NextDouble() * 0.12)
             Dim maxSpeed As Double = 0.08 * (intervalMinutes / 10.0)
             Dim noiseAmplitude As Double = 0.015 * (intervalMinutes / 10.0)
-            Dim lowerBound As Double = Math.Max(2.0, targetTemp - 0.8)
-            Dim upperBound As Double = Math.Min(4.0, targetTemp + 0.8)
+            Dim lowerBound As Double = Math.Max(2.2, targetTemp - 0.8)
+            Dim upperBound As Double = Math.Min(3.8, targetTemp + 0.8)
 
             ' Seleção randômica do perfil de descida da câmara (0: Exponencial, 1: Sigmoidal/Curva S, 2: Inércia Térmica, 3: Duplo Estágio)
             Dim profileType As Integer = rnd.Next(0, 4)
@@ -182,7 +183,7 @@ Public Class SimuladorTemperaturaService
             Dim dates(totalPontos) As Double
             Dim temps(totalPontos) As Double
 
-            Dim currentTemp As Double = cycle.TempCarregamento
+            Dim currentTemp As Double = tempCarregamento
             Dim currentVelocity As Double = 0.0
             Dim wobble As Double = 0.0
             Dim wobbleVelocity As Double = 0.0
@@ -244,14 +245,14 @@ Public Class SimuladorTemperaturaService
                         currentVelocity = 0.0
                     End If
                 Else
-                    If temInicio AndAlso ptTime < inicio Then
+                    If temCarregamento AndAlso ptTime < inicio Then
                         ' Descida da TempCarregamento para TempInicial no carregamento (Fase 1)
                         Dim t_hours_carreg As Double = (ptTime - carregamento).TotalHours
                         Dim loadingDuration As Double = (inicio - carregamento).TotalHours
                         Dim t_norm As Double = t_hours_carreg / loadingDuration
                         Dim exponent As Double = 1.3 + (rnd.NextDouble() * 0.6)
                         Dim decay As Double = Math.Pow(Math.Max(0.0, 1.0 - t_norm), exponent)
-                        Dim baseTemp As Double = tempInicialRef + (cycle.TempCarregamento - tempInicialRef) * decay
+                        Dim baseTemp As Double = tempInicialRef + (tempCarregamento - tempInicialRef) * decay
 
                         Dim stepScale As Double = intervalMinutes / 10.0
                         wobbleVelocity = 0.85 * wobbleVelocity + ((rnd.NextDouble() * 0.3) - 0.15) * stepScale
@@ -299,7 +300,7 @@ Public Class SimuladorTemperaturaService
 
                             Dim noise = (rnd.NextDouble() * 0.8) - 0.4
                             temp = baseTemp + noise
-                            temp = Math.Max(2.0, temp)
+                            temp = Math.Max(2.2, temp)
                             currentTemp = temp
                             currentVelocity = 0.0
                         Else
@@ -328,7 +329,7 @@ Public Class SimuladorTemperaturaService
                             ' Restaurando o jitter e o clamping originais que garantem a aleatoriedade
                             Dim jitter As Double = (rnd.NextDouble() * 2.0) - 1.0
                             temp = temp + jitter
-                            temp = Math.Max(2.0, Math.Min(4.0, temp))
+                            temp = Math.Max(2.2, Math.Min(3.8, temp))
                         End If
                     End If
                 End If
@@ -448,9 +449,9 @@ Public Class SimuladorTemperaturaService
 
                                         Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
                                         AddTableCell(tbl, rotuloAmbiente, nSensor, True)
-                                        AddTableCell(tbl, "Data de Início", If(cycle.TemInicio, cycle.DataInicio.Value.ToString("dd/MM/yyyy"), "N/I"), False)
-                                        AddTableCell(tbl, "Hora de Início", If(cycle.TemInicio, cycle.HoraInicio.Value.ToString("hh\:mm"), "N/I"), True)
-                                        AddTableCell(tbl, "Temp. Inicial", If(cycle.TemInicio, cycle.TempInicial.Value.ToString("F1") & " °C", "N/I"), False)
+                                        AddTableCell(tbl, "Data de Início", cycle.DataInicio.ToString("dd/MM/yyyy"), False)
+                                        AddTableCell(tbl, "Hora de Início", cycle.HoraInicio.ToString("hh\:mm"), True)
+                                        AddTableCell(tbl, "Temp. Inicial", cycle.TempInicial.ToString("F1") & " °C", False)
                                         AddTableCell(tbl, "Temp. Mínima", tempMin.ToString("F1") & " °C", True)
                                         AddTableCell(tbl, "Temp. Máxima", tempMax.ToString("F1") & " °C", False)
                                         AddTableCell(tbl, "Temp. Média", tempMed.ToString("F1") & " °C", True)
