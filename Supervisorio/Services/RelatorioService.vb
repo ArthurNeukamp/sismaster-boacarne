@@ -129,7 +129,6 @@ Public Class RelatorioService
                             row.ConstantItem(4.5, Unit.Centimetre).Column(Sub(c)
                                 c.Item().Text("De: " & dtIni.ToString("dd/MM/yyyy HH:mm"))
                                 c.Item().Text("Até: " & dtFim2.ToString("dd/MM/yyyy HH:mm"))
-                                c.Item().Text("Gerado: " & DateTime.Now.ToString("dd/MM/yyyy HH:mm"))
                                 c.Item().Text("Total: " & dadosPdf.Count.ToString("N0") & " registros")
                             End Sub)
                         End Sub)
@@ -214,10 +213,12 @@ Public Class RelatorioService
                     page.Footer().Column(Sub(col)
                         col.Item().LineHorizontal(0.5).LineColor(Colors.Grey.Medium)
                         col.Item().Row(Sub(row)
-                            Dim textoFooter = cfg.FooterTexto _
-                                .Replace("{DATA}", DateTime.Now.ToString("dd/MM/yyyy")) _
-                                .Replace("{HORA}", DateTime.Now.ToString("HH:mm"))
-                            row.RelativeItem().Text(textoFooter).FontSize(7).FontColor(Colors.Grey.Darken1)
+                             Dim textoFooter = cfg.FooterTexto
+                             textoFooter = textoFooter.Replace(" | Gerado em {DATA} | {HORA}", "")
+                             textoFooter = textoFooter.Replace(" | {DATA} | {HORA}", "")
+                             textoFooter = textoFooter.Replace("{DATA}", "")
+                             textoFooter = textoFooter.Replace("{HORA}", "")
+                             row.RelativeItem().Text(textoFooter).FontSize(7).FontColor(Colors.Grey.Darken1)
                             row.ConstantItem(2.5, Unit.Centimetre).Text(Sub(x)
                                 x.Span("Pág. ").FontSize(7)
                                 x.Span((pageIdx + 1).ToString()).FontSize(7)

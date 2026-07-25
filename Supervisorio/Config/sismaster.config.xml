@@ -19,7 +19,7 @@
   <Relatorios>
     <NomeCliente>Boa Carne</NomeCliente>
     <NomeInstalacao>Frigorifico Boa Carne - Colider/MT</NomeInstalacao>
-    <FooterTexto>SisMaster Supervisório de Refrigeração | Gerado em {DATA} | {HORA}</FooterTexto>
+    <FooterTexto>SisMaster Supervisório de Refrigeração</FooterTexto>
     <PastaExportacao>relatorios</PastaExportacao>
     <PeriodoPadraoAtrasoDias>7</PeriodoPadraoAtrasoDias>
   </Relatorios>

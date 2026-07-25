@@ -11,7 +11,7 @@ Public Class ConfiguracaoApp
     Public Property LogoPath                As String  = ""
     Public Property NomeCliente             As String  = "Cliente"
     Public Property NomeInstalacao          As String  = "Frigorifico"
-    Public Property FooterTexto             As String  = "SisMaster | {DATA} | {HORA}"
+    Public Property FooterTexto             As String  = "SisMaster"
     Public Property PastaExportacao         As String  = ""
     Public Property PeriodoPadraoAtrasoDias As Integer = 2
 
