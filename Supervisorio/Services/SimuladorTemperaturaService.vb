@@ -702,17 +702,25 @@ Public Class SimuladorTemperaturaService
         plt.SetAxisLimitsX(datesSalvas(0), datesSalvas(datesSalvas.Length - 1))
         plt.Margins(x:=0, y:=0.1)
 
-        ' Configurar Eixo Y (sempre de 2 °C em 2 °C)
+        ' Configurar Eixo Y (sempre de 2 °C em 2 °C, dinâmico para mínimo e máximo)
         Dim yTickPositions As New System.Collections.Generic.List(Of Double)()
         Dim yTickLabels As New System.Collections.Generic.List(Of String)()
-        Dim maxLimit As Integer = CInt(Math.Ceiling(Math.Max(tempsSalvas.Max(), 4.0) / 2.0) * 2.0) + 2
-        For yVal = 0 To maxLimit Step 2
+        
+        Dim minTemp = tempsSalvas.Min()
+        Dim maxTemp = tempsSalvas.Max()
+        
+        Dim minLimit As Integer = CInt(Math.Floor(minTemp / 2.0) * 2.0) - 2
+        If minLimit > 0 Then minLimit = 0
+        
+        Dim maxLimit As Integer = CInt(Math.Ceiling(Math.Max(maxTemp, 4.0) / 2.0) * 2.0) + 2
+        
+        For yVal = minLimit To maxLimit Step 2
             yTickPositions.Add(yVal)
             yTickLabels.Add(yVal.ToString() & " °C")
         Next
         plt.YTicks(yTickPositions.ToArray(), yTickLabels.ToArray())
         plt.YAxis.TickLabelStyle(fontSize:=16.0F)
-        plt.SetAxisLimitsY(0, maxLimit)
+        plt.SetAxisLimitsY(minLimit, maxLimit)
         plt.Layout(left:=220, bottom:=160)
         plt.Grid(True, color:=System.Drawing.Color.FromArgb(235, 235, 235))
     End Sub
