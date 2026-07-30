@@ -363,21 +363,36 @@ Public Class SimuladorTemperaturaService
                 tempsSalvas(idx) = Convert.ToDouble(row("temperatura"))
             Next
 
-            Dim tempMin = tempsSalvas.Min()
-            Dim tempMax = tempsSalvas.Max()
-            Dim tempMed = tempsSalvas.Average()
+            Dim isMaturacao = IsSensorMaturacao(cycle.SensorId)
+
+            ' Filtrar dados térmicos especificamente a partir do Início da Maturação para os cálculos de métricas
+            Dim tempsMaturacao As New List(Of Double)()
+            For idx = 0 To totalPontosSalvos - 1
+                Dim row = dadosSalvos.Rows(idx)
+                Dim dh As DateTime = Convert.ToDateTime(row("data_hora"))
+                If Not isMaturacao OrElse dh >= inicio Then
+                    tempsMaturacao.Add(Convert.ToDouble(row("temperatura")))
+                End If
+            Next
+            If tempsMaturacao.Count = 0 Then
+                tempsMaturacao.AddRange(tempsSalvas)
+            End If
+
+            Dim tempMin = tempsMaturacao.Min()
+            Dim tempMax = tempsMaturacao.Max()
+            Dim tempMed = tempsMaturacao.Average()
+            Dim tempFinalRef = tempsSalvas(tempsSalvas.Length - 1)
 
             Dim plt As New ScottPlot.Plot(2500, 1050)
-            
-            Dim isMaturacao = IsSensorMaturacao(cycle.SensorId)
+
             Dim nSensor = cycle.Camara.Trim()
             Dim tituloGrafico = If(isMaturacao, $"GRÁFICO DE MATURAÇÃO - {nSensor.ToUpper()}", $"GRÁFICO - {nSensor.ToUpper()}")
             plt.Title(tituloGrafico, size:=30, color:=System.Drawing.Color.FromArgb(30, 64, 115), bold:=True)
-            
+
             plt.AddScatter(datesSalvas, tempsSalvas, color:=System.Drawing.Color.FromArgb(30, 64, 115), lineWidth:=5, markerSize:=0)
-            
+
             ConfigurarEixosGrafico(plt, carregamento, fim, datesSalvas, tempsSalvas)
-            
+
             Dim tempPngPath = Path.Combine(Path.GetTempPath(), $"temp_chart_{Guid.NewGuid().ToString()}.png")
             plt.SaveFig(tempPngPath)
 
@@ -392,90 +407,100 @@ Public Class SimuladorTemperaturaService
                 ElseIf String.IsNullOrEmpty(subCabecalho) Then
                     subCabecalho = "FRIGORÍFICO BOA CARNE - SIF 5125"
                 End If
-
                 Dim logoBytes = ObterLogoBytes()
 
                 Document.Create(Sub(container)
-                    container.Page(Sub(page)
-                        page.Size(PageSizes.A4.Landscape())
-                        page.Margin(1.2, Unit.Centimetre)
-                        page.PageColor(Colors.White)
-                        page.DefaultTextStyle(Function(x) x.FontSize(8.5).FontFamily("Arial"))
-                        
-                        ' Cabeçalho
-                        page.Header().Column(Sub(colHeader)
-                            colHeader.Item().Row(Sub(row)
-                                If logoBytes IsNot Nothing Then
-                                    row.ConstantItem(2.5, Unit.Centimetre).Image(logoBytes)
-                                    row.ConstantItem(0.4, Unit.Centimetre)
-                                ElseIf File.Exists(_config.LogoPath) Then
-                                    row.ConstantItem(2.5, Unit.Centimetre).Image(_config.LogoPath)
-                                    row.ConstantItem(0.4, Unit.Centimetre)
-                                End If
+                                    container.Page(Sub(page)
+                                                       page.Size(PageSizes.A4.Landscape())
+                                                       page.Margin(1.0, Unit.Centimetre)
+                                                       page.PageColor(Colors.White)
+                                                       page.DefaultTextStyle(Function(x) x.FontSize(8.5).FontFamily("Arial"))
 
-                                row.RelativeItem().Column(Sub(c)
-                                    c.Item().Text(nomeCliente).FontSize(13).Bold().FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
-                                    c.Item().Text(subCabecalho).FontSize(9).FontColor(Colors.Grey.Darken2)
-                                End Sub)
+                                                       ' Cabeçalho
+                                                       page.Header().Column(Sub(colHeader)
+                                                                                colHeader.Item().Row(Sub(row)
+                                                                                                         If logoBytes IsNot Nothing Then
+                                                                                                             row.ConstantItem(2.5, Unit.Centimetre).Image(logoBytes)
+                                                                                                             row.ConstantItem(0.4, Unit.Centimetre)
+                                                                                                         ElseIf File.Exists(_config.LogoPath) Then
+                                                                                                             row.ConstantItem(2.5, Unit.Centimetre).Image(_config.LogoPath)
+                                                                                                             row.ConstantItem(0.4, Unit.Centimetre)
+                                                                                                         End If
 
-                                row.ConstantItem(5.5, Unit.Centimetre).Column(Sub(c)
-                                    Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
-                                    c.Item().Text($"{rotuloAmbiente}: {nSensor}").Bold()
-                                    c.Item().Text($"Início: {inicio.ToString("dd/MM/yyyy HH:mm")}")
-                                    c.Item().Text($"Fim: {fim.ToString("dd/MM/yyyy HH:mm")}")
-                                End Sub)
-                            End Sub)
-                            colHeader.Item().PaddingTop(4).LineHorizontal(1).LineColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
-                        End Sub)
+                                                                                                         row.RelativeItem().Column(Sub(c)
+                                                                                                                                       c.Item().Text(nomeCliente).FontSize(13).Bold().FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+                                                                                                                                       c.Item().Text(subCabecalho).FontSize(9).FontColor(Colors.Grey.Darken2)
+                                                                                                                                   End Sub)
 
-                        ' Conteúdo vertical
-                        page.Content().PaddingVertical(5).Column(Sub(col)
-                            col.Item().Row(Sub(row)
-                                row.RelativeItem().Image(tempPngPath)
-                            End Sub)
+                                                                                                         row.ConstantItem(7.5, Unit.Centimetre).Column(Sub(c)
+                                                                                                                                                           Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
+                                                                                                                                                           c.Item().Text($"{rotuloAmbiente}: {nSensor}").Bold()
+                                                                                                                                                           c.Item().Text($"Início: {carregamento.ToString("dd/MM/yyyy HH:mm")}")
+                                                                                                                                                           c.Item().Text($"Fim: {fim.ToString("dd/MM/yyyy HH:mm")}")
+                                                                                                                                                       End Sub)
+                                                                                                     End Sub)
+                                                                                colHeader.Item().PaddingTop(4).LineHorizontal(1).LineColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+                                                                            End Sub)
 
-                            col.Item().PaddingTop(8)
+                                                       ' Conteúdo vertical
+                                                       page.Content().PaddingVertical(2).Column(Sub(col)
+                                                                                                    col.Item().Row(Sub(row)
+                                                                                                                       row.RelativeItem().Image(tempPngPath)
+                                                                                                                   End Sub)
 
-                            col.Item().Row(Sub(row)
-                                row.RelativeItem().Column(Sub(c)
-                                    Dim tituloMetricas = If(isMaturacao, "Métricas da Maturação", "Métricas de Temperatura")
-                                    c.Item().PaddingBottom(2).Text(tituloMetricas).Bold().FontSize(9.0).FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
-                                    
-                                    c.Item().Table(Sub(tbl)
-                                        tbl.ColumnsDefinition(Sub(cols)
-                                            cols.RelativeColumn(3.0F)
-                                            cols.RelativeColumn(1.5F)
-                                        End Sub)
+                                                                                                    col.Item().PaddingTop(4)
 
-                                        Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
-                                        AddTableCell(tbl, rotuloAmbiente, nSensor, True)
-                                        AddTableCell(tbl, "Data de Início", cycle.DataInicio.ToString("dd/MM/yyyy"), False)
-                                        AddTableCell(tbl, "Hora de Início", cycle.HoraInicio.ToString("hh\:mm"), True)
-                                        AddTableCell(tbl, "Temp. Inicial", cycle.TempInicial.ToString("F1") & " °C", False)
-                                        AddTableCell(tbl, "Temp. Mínima", tempMin.ToString("F1") & " °C", True)
-                                        AddTableCell(tbl, "Temp. Máxima", tempMax.ToString("F1") & " °C", False)
-                                        AddTableCell(tbl, "Temp. Média", tempMed.ToString("F1") & " °C", True)
-                                    End Sub)
-                                End Sub)
-                            End Sub)
-                        End Sub)
+                                                                                                    col.Item().Row(Sub(row)
+                                                                                                                       row.RelativeItem().Column(Sub(c)
+                                                                                                                                                     Dim tituloMetricas = If(isMaturacao, "Métricas da Maturação", "Métricas de Temperatura")
+                                                                                                                                                     c.Item().PaddingBottom(2).Text(tituloMetricas).Bold().FontSize(9.0).FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
 
-                        ' Rodapé
-                        page.Footer().Column(Sub(col)
-                            col.Item().LineHorizontal(0.5).LineColor(Colors.Grey.Medium)
-                            col.Item().Row(Sub(row)
-                                Dim textoFooter = "SisMaster Supervisório de Refrigeração"
-                                row.RelativeItem().Text(textoFooter).FontSize(7.5).FontColor(Colors.Grey.Darken1)
-                                row.ConstantItem(2.5, Unit.Centimetre).Text(Sub(x)
-                                    x.Span("Pág. ").FontSize(7.5)
-                                    x.CurrentPageNumber().FontSize(7.5)
-                                    x.Span(" / ").FontSize(7.5)
-                                    x.TotalPages().FontSize(7.5)
-                                End Sub)
-                            End Sub)
-                        End Sub)
-                    End Sub)
-                End Sub).GeneratePdf(caminhoPdf)
+                                                                                                                                                     c.Item().Table(Sub(tbl)
+                                                                                                                                                                        tbl.ColumnsDefinition(Sub(cols)
+                                                                                                                                                                                                  cols.RelativeColumn(3.0F)
+                                                                                                                                                                                                  cols.RelativeColumn(1.5F)
+                                                                                                                                                                                              End Sub)
+
+                                                                                                                                                                        Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
+                                                                                                                                                                        AddTableCell(tbl, rotuloAmbiente, nSensor, True)
+                                                                                                                                                                        If isMaturacao Then
+                                                                                                                                                                            AddTableCell(tbl, "Data/Hora de Início de Maturação", cycle.DataInicio.ToString("dd/MM/yyyy") & " " & cycle.HoraInicio.ToString("hh\:mm"), False)
+                                                                                                                                                                            AddTableCell(tbl, "Data/Hora de Fim de Maturação", cycle.DataFim.ToString("dd/MM/yyyy") & " " & cycle.HoraFim.ToString("hh\:mm"), True)
+                                                                                                                                                                            AddTableCell(tbl, "Temp. Inicial de Maturação", cycle.TempInicial.ToString("F1") & " °C", False)
+                                                                                                                                                                            AddTableCell(tbl, "Temp. Final de Maturação", tempFinalRef.ToString("F1") & " °C", True)
+                                                                                                                                                                            AddTableCell(tbl, "Temp. Mínima Durante Maturação", tempMin.ToString("F1") & " °C", False)
+                                                                                                                                                                            AddTableCell(tbl, "Temp. Máxima Durante Maturação", tempMax.ToString("F1") & " °C", True)
+                                                                                                                                                                            AddTableCell(tbl, "Temp. Média Durante Maturação", tempMed.ToString("F1") & " °C", False)
+                                                                                                                                                                        Else
+                                                                                                                                                                            AddTableCell(tbl, "Data/Hora de Início", cycle.DataInicio.ToString("dd/MM/yyyy") & " " & cycle.HoraInicio.ToString("hh\:mm"), False)
+                                                                                                                                                                            AddTableCell(tbl, "Data/Hora de Fim", cycle.DataFim.ToString("dd/MM/yyyy") & " " & cycle.HoraFim.ToString("hh\:mm"), True)
+                                                                                                                                                                            AddTableCell(tbl, "Temp. Inicial", cycle.TempInicial.ToString("F1") & " °C", False)
+                                                                                                                                                                            AddTableCell(tbl, "Temp. Final", tempFinalRef.ToString("F1") & " °C", True)
+                                                                                                                                                                            AddTableCell(tbl, "Temp. Mínima", tempMin.ToString("F1") & " °C", False)
+                                                                                                                                                                            AddTableCell(tbl, "Temp. Máxima", tempMax.ToString("F1") & " °C", True)
+                                                                                                                                                                            AddTableCell(tbl, "Temp. Média", tempMed.ToString("F1") & " °C", False)
+                                                                                                                                                                        End If
+                                                                                                                                                                    End Sub)
+                                                                                                                                                 End Sub)
+                                                                                                                   End Sub)
+                                                                                                End Sub)
+
+                                                       ' Rodapé
+                                                       page.Footer().Column(Sub(col)
+                                                                                col.Item().LineHorizontal(0.5).LineColor(Colors.Grey.Medium)
+                                                                                col.Item().Row(Sub(row)
+                                                                                                   Dim textoFooter = "SisMaster Supervisório de Refrigeração"
+                                                                                                   row.RelativeItem().Text(textoFooter).FontSize(7.5).FontColor(Colors.Grey.Darken1)
+                                                                                                   row.ConstantItem(2.5, Unit.Centimetre).Text(Sub(x)
+                                                                                                                                                   x.Span("Pág. ").FontSize(7.5)
+                                                                                                                                                   x.CurrentPageNumber().FontSize(7.5)
+                                                                                                                                                   x.Span(" / ").FontSize(7.5)
+                                                                                                                                                   x.TotalPages().FontSize(7.5)
+                                                                                                                                               End Sub)
+                                                                                               End Sub)
+                                                                            End Sub)
+                                                   End Sub)
+                                End Sub).GeneratePdf(caminhoPdf)
 
                 ' --- 6.1. GERAR RELATÓRIO PADRÃO POR LISTA NA MESMA PASTA ---
                 Try
@@ -521,8 +546,8 @@ Public Class SimuladorTemperaturaService
 
     Private Shared Sub AddTableCell(tbl As TableDescriptor, label As String, value As String, isAlternative As Boolean)
         Dim bg = If(isAlternative, QuestPDF.Infrastructure.Color.FromRGB(245, 247, 250), Colors.White)
-        tbl.Cell().Background(bg).Padding(4).BorderBottom(0.5).BorderColor(Colors.Grey.Lighten2).Text(label).Bold()
-        tbl.Cell().Background(bg).Padding(4).BorderBottom(0.5).BorderColor(Colors.Grey.Lighten2).Text(value)
+        tbl.Cell().Background(bg).Padding(2.5).BorderBottom(0.5).BorderColor(Colors.Grey.Lighten2).Text(label).Bold()
+        tbl.Cell().Background(bg).Padding(2.5).BorderBottom(0.5).BorderColor(Colors.Grey.Lighten2).Text(value)
     End Sub
 
     Private Shared Function IsSensorMaturacao(sensorId As Integer) As Boolean
@@ -535,7 +560,7 @@ Public Class SimuladorTemperaturaService
         If totalPontosSalvos = 0 Then
             Throw New Exception("Nenhum registro encontrado no banco de dados para o sensor selecionado no período informado.")
         End If
-        
+
         Dim datesSalvas(totalPontosSalvos - 1) As Double
         Dim tempsSalvas(totalPontosSalvos - 1) As Double
         For idx = 0 To totalPontosSalvos - 1
@@ -548,18 +573,19 @@ Public Class SimuladorTemperaturaService
         Dim tempMin = tempsSalvas.Min()
         Dim tempMax = tempsSalvas.Max()
         Dim tempMed = tempsSalvas.Average()
+        Dim tempFinalRef = tempsSalvas(tempsSalvas.Length - 1)
 
         Dim plt As New ScottPlot.Plot(2500, 1050)
-        
+
         Dim isMaturacao = IsSensorMaturacao(sensorId)
         Dim nSensor = camaraNome.Trim()
         Dim tituloGrafico = If(isMaturacao, $"GRÁFICO DE MATURAÇÃO - {nSensor.ToUpper()}", $"GRÁFICO - {nSensor.ToUpper()}")
         plt.Title(tituloGrafico, size:=30, color:=System.Drawing.Color.FromArgb(30, 64, 115), bold:=True)
-        
+
         plt.AddScatter(datesSalvas, tempsSalvas, color:=System.Drawing.Color.FromArgb(30, 64, 115), lineWidth:=5, markerSize:=0)
-        
+
         ConfigurarEixosGrafico(plt, inicio, fim, datesSalvas, tempsSalvas)
-        
+
         Dim tempPngPath = Path.Combine(Path.GetTempPath(), $"temp_chart_{Guid.NewGuid().ToString()}.png")
         plt.SaveFig(tempPngPath)
 
@@ -575,66 +601,77 @@ Public Class SimuladorTemperaturaService
             Dim logoBytes = ObterLogoBytes()
 
             Document.Create(Sub(container)
-                container.Page(Sub(page)
-                    page.Size(PageSizes.A4.Landscape())
-                    page.Margin(1.2, Unit.Centimetre)
-                    page.PageColor(Colors.White)
-                    page.DefaultTextStyle(Function(x) x.FontSize(8.5).FontFamily("Arial"))
-                    
-                    ' Cabeçalho
-                    page.Header().Column(Sub(colHeader)
-                        colHeader.Item().Row(Sub(row)
-                            If logoBytes IsNot Nothing Then
-                                row.ConstantItem(2.5, Unit.Centimetre).Image(logoBytes)
-                                row.ConstantItem(0.4, Unit.Centimetre)
-                            ElseIf File.Exists(_config.LogoPath) Then
-                                row.ConstantItem(2.5, Unit.Centimetre).Image(_config.LogoPath)
-                                row.ConstantItem(0.4, Unit.Centimetre)
-                            End If
+                                container.Page(Sub(page)
+                                                   page.Size(PageSizes.A4.Landscape())
+                                                   page.Margin(1.0, Unit.Centimetre)
+                                                   page.PageColor(Colors.White)
+                                                   page.DefaultTextStyle(Function(x) x.FontSize(8.5).FontFamily("Arial"))
 
-                            row.RelativeItem().Column(Sub(c)
-                                c.Item().Text(nomeCliente).FontSize(13).Bold().FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
-                                c.Item().Text(subCabecalho).FontSize(9).FontColor(Colors.Grey.Darken2)
-                            End Sub)
+                                                   ' Cabeçalho
+                                                   page.Header().Column(Sub(colHeader)
+                                                                            colHeader.Item().Row(Sub(row)
+                                                                                                     If logoBytes IsNot Nothing Then
+                                                                                                         row.ConstantItem(2.5, Unit.Centimetre).Image(logoBytes)
+                                                                                                         row.ConstantItem(0.4, Unit.Centimetre)
+                                                                                                     ElseIf File.Exists(_config.LogoPath) Then
+                                                                                                         row.ConstantItem(2.5, Unit.Centimetre).Image(_config.LogoPath)
+                                                                                                         row.ConstantItem(0.4, Unit.Centimetre)
+                                                                                                     End If
 
-                            row.ConstantItem(5.5, Unit.Centimetre).Column(Sub(c)
-                                Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
-                                c.Item().Text($"{rotuloAmbiente}: {nSensor}").Bold()
-                                c.Item().Text($"Início: {inicio.ToString("dd/MM/yyyy HH:mm")}")
-                                c.Item().Text($"Fim: {fim.ToString("dd/MM/yyyy HH:mm")}")
-                            End Sub)
-                        End Sub)
-                        colHeader.Item().PaddingTop(4).LineHorizontal(1).LineColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
-                    End Sub)
+                                                                                                     row.RelativeItem().Column(Sub(c)
+                                                                                                                                   c.Item().Text(nomeCliente).FontSize(13).Bold().FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+                                                                                                                                   c.Item().Text(subCabecalho).FontSize(9).FontColor(Colors.Grey.Darken2)
+                                                                                                                               End Sub)
 
-                    ' Conteúdo vertical
-                    page.Content().PaddingVertical(5).Column(Sub(col)
-                        col.Item().Row(Sub(row)
-                            row.RelativeItem().Image(tempPngPath)
-                        End Sub)
+                                                                                                     row.ConstantItem(7.5, Unit.Centimetre).Column(Sub(c)
+                                                                                                                                                       Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
+                                                                                                                                                       c.Item().Text($"{rotuloAmbiente}: {nSensor}").Bold()
+                                                                                                                                                       c.Item().Text($"Início: {inicio.ToString("dd/MM/yyyy HH:mm")}")
+                                                                                                                                                       c.Item().Text($"Fim: {fim.ToString("dd/MM/yyyy HH:mm")}")
+                                                                                                                                                   End Sub)
+                                                                                                 End Sub)
+                                                                            colHeader.Item().PaddingTop(4).LineHorizontal(1).LineColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+                                                                        End Sub)
 
-                        col.Item().PaddingTop(8)
+                                                   ' Conteúdo vertical
+                                                   page.Content().PaddingVertical(2).Column(Sub(col)
+                                                                                                col.Item().Row(Sub(row)
+                                                                                                                   row.RelativeItem().Image(tempPngPath)
+                                                                                                               End Sub)
 
-                        col.Item().Row(Sub(row)
-                            row.RelativeItem().Column(Sub(c)
-                                Dim tituloMetricas = If(isMaturacao, "Métricas da Maturação", "Métricas de Temperatura")
-                                c.Item().PaddingBottom(2).Text(tituloMetricas).Bold().FontSize(9.0).FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
-                                
-                                c.Item().Table(Sub(tbl)
-                                    tbl.ColumnsDefinition(Sub(cols)
-                                        cols.RelativeColumn(3.0F)
-                                        cols.RelativeColumn(1.5F)
-                                    End Sub)
+                                                                                                col.Item().PaddingTop(4)
 
-                                    Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
-                                    AddTableCell(tbl, rotuloAmbiente, nSensor, True)
-                                    AddTableCell(tbl, "Data de Início", inicio.ToString("dd/MM/yyyy"), False)
-                                    AddTableCell(tbl, "Hora de Início", inicio.ToString("HH\:mm"), True)
-                                    AddTableCell(tbl, "Temp. Inicial", tempsSalvas(0).ToString("F1") & " °C", False)
-                                    AddTableCell(tbl, "Temp. Mínima", tempMin.ToString("F1") & " °C", True)
-                                    AddTableCell(tbl, "Temp. Máxima", tempMax.ToString("F1") & " °C", False)
-                                    AddTableCell(tbl, "Temp. Média", tempMed.ToString("F1") & " °C", True)
-                                End Sub)
+                                                                                                col.Item().Row(Sub(row)
+                                                                                                                   row.RelativeItem().Column(Sub(c)
+                                                                                                                                                 Dim tituloMetricas = If(isMaturacao, "Métricas da Maturação", "Métricas de Temperatura")
+                                                                                                                                                 c.Item().PaddingBottom(2).Text(tituloMetricas).Bold().FontSize(9.0).FontColor(QuestPDF.Infrastructure.Color.FromRGB(30, 64, 115))
+
+                                                                                                                                                 c.Item().Table(Sub(tbl)
+                                                                                                                                                                    tbl.ColumnsDefinition(Sub(cols)
+                                                                                                                                                                                              cols.RelativeColumn(3.0F)
+                                                                                                                                                                                              cols.RelativeColumn(1.5F)
+                                                                                                                                                                                          End Sub)
+
+                                                                                                                                                                    Dim rotuloAmbiente = If(isMaturacao, "Câmara", "Ambiente")
+                                                                                                                                                                    AddTableCell(tbl, rotuloAmbiente, nSensor, True)
+                                                                                                                                                                    If isMaturacao Then
+                                                                                                                                                                        AddTableCell(tbl, "Data/Hora de Início de Maturação", inicio.ToString("dd/MM/yyyy HH:mm"), False)
+                                                                                                                                                                        AddTableCell(tbl, "Data/Hora de Fim de Maturação", fim.ToString("dd/MM/yyyy HH:mm"), True)
+                                                                                                                                                                        AddTableCell(tbl, "Temp. Inicial de Maturação", tempsSalvas(0).ToString("F1") & " °C", False)
+                                                                                                                                                                        AddTableCell(tbl, "Temp. Final de Maturação", tempFinalRef.ToString("F1") & " °C", True)
+                                                                                                                                                                        AddTableCell(tbl, "Temp. Mínima Durante Maturação", tempMin.ToString("F1") & " °C", False)
+                                                                                                                                                                        AddTableCell(tbl, "Temp. Máxima Durante Maturação", tempMax.ToString("F1") & " °C", True)
+                                                                                                                                                                        AddTableCell(tbl, "Temp. Média Durante Maturação", tempMed.ToString("F1") & " °C", False)
+                                                                                                                                                                    Else
+                                                                                                                                                                        AddTableCell(tbl, "Data/Hora de Início", inicio.ToString("dd/MM/yyyy HH:mm"), False)
+                                                                                                                                                                        AddTableCell(tbl, "Data/Hora de Fim", fim.ToString("dd/MM/yyyy HH:mm"), True)
+                                                                                                                                                                        AddTableCell(tbl, "Temp. Inicial", tempsSalvas(0).ToString("F1") & " °C", False)
+                                                                                                                                                                        AddTableCell(tbl, "Temp. Final", tempFinalRef.ToString("F1") & " °C", True)
+                                                                                                                                                                        AddTableCell(tbl, "Temp. Mínima", tempMin.ToString("F1") & " °C", False)
+                                                                                                                                                                        AddTableCell(tbl, "Temp. Máxima", tempMax.ToString("F1") & " °C", True)
+                                                                                                                                                                        AddTableCell(tbl, "Temp. Média", tempMed.ToString("F1") & " °C", False)
+                                                                                                                                                                    End If
+                                                                                                                                                                End Sub)
                             End Sub)
                         End Sub)
                     End Sub)
@@ -702,19 +739,19 @@ Public Class SimuladorTemperaturaService
         plt.SetAxisLimitsX(datesSalvas(0), datesSalvas(datesSalvas.Length - 1))
         plt.Margins(x:=0, y:=0.1)
 
-        ' Configurar Eixo Y (sempre de 2 °C em 2 °C, dinâmico para mínimo e máximo)
+        ' Configurar Eixo Y (sempre de 1 °C em 1 °C, dinâmico para mínimo e máximo)
         Dim yTickPositions As New System.Collections.Generic.List(Of Double)()
         Dim yTickLabels As New System.Collections.Generic.List(Of String)()
         
         Dim minTemp = tempsSalvas.Min()
         Dim maxTemp = tempsSalvas.Max()
         
-        Dim minLimit As Integer = CInt(Math.Floor(minTemp / 2.0) * 2.0) - 2
+        Dim minLimit As Integer = CInt(Math.Floor(minTemp)) - 1
         If minLimit > 0 Then minLimit = 0
         
-        Dim maxLimit As Integer = CInt(Math.Ceiling(Math.Max(maxTemp, 4.0) / 2.0) * 2.0) + 2
+        Dim maxLimit As Integer = CInt(Math.Ceiling(Math.Max(maxTemp, 4.0))) + 1
         
-        For yVal = minLimit To maxLimit Step 2
+        For yVal = minLimit To maxLimit Step 1
             yTickPositions.Add(yVal)
             yTickLabels.Add(yVal.ToString() & " °C")
         Next
@@ -722,7 +759,8 @@ Public Class SimuladorTemperaturaService
         plt.YAxis.TickLabelStyle(fontSize:=16.0F)
         plt.SetAxisLimitsY(minLimit, maxLimit)
         plt.Layout(left:=220, bottom:=160)
-        plt.Grid(True, color:=System.Drawing.Color.FromArgb(235, 235, 235))
+        plt.XAxis.MajorGrid(True, color:=System.Drawing.Color.FromArgb(170, 170, 170), lineWidth:=1.0F)
+        plt.YAxis.MajorGrid(True, color:=System.Drawing.Color.FromArgb(80, 80, 80), lineWidth:=3.0F)
     End Sub
 
 End Class
