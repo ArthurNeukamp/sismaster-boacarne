@@ -10,6 +10,7 @@ Public Class frmClimatizacao
         '*******************************************************
         'Climatizados - Atualização tela
         '*******************************************************
+        lblTempEstResf.Text = MainForm.Ambientes(33).varTemperatura / 10 & " °C"
         lblTempEmbSec.Text = MainForm.Ambientes(34).varTemperatura / 10 & " °C"
         lblTempDesossa.Text = MainForm.Ambientes(35).varTemperatura / 10 & " °C"
         lblTempOsso.Text = MainForm.Ambientes(36).varTemperatura / 10 & " °C"

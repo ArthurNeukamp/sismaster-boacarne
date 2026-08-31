@@ -1,4 +1,4 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
 Partial Class frmClimatizacao
     Inherits System.Windows.Forms.Form
 
@@ -113,6 +113,14 @@ Partial Class frmClimatizacao
         Label58 = New Label()
         Label59 = New Label()
         Label60 = New Label()
+        Panel12 = New Panel()
+        TextBox11 = New TextBox()
+        Label61 = New Label()
+        lblTempEstResf = New Label()
+        Label62 = New Label()
+        Label63 = New Label()
+        Label64 = New Label()
+        Label65 = New Label()
         Panel5.SuspendLayout()
         Panel1.SuspendLayout()
         Panel2.SuspendLayout()
@@ -124,6 +132,7 @@ Partial Class frmClimatizacao
         Panel9.SuspendLayout()
         Panel10.SuspendLayout()
         Panel11.SuspendLayout()
+        Panel12.SuspendLayout()
         SuspendLayout()
         ' 
         ' Panel5
@@ -1251,6 +1260,108 @@ Partial Class frmClimatizacao
         Label60.Text = "Câmara Resf. Estômago"
         Label60.TextAlign = ContentAlignment.MiddleCenter
         ' 
+        ' Panel12
+        ' 
+        Panel12.BackColor = Color.Silver
+        Panel12.BorderStyle = BorderStyle.FixedSingle
+        Panel12.Controls.Add(TextBox11)
+        Panel12.Controls.Add(Label61)
+        Panel12.Controls.Add(lblTempEstResf)
+        Panel12.Controls.Add(Label62)
+        Panel12.Controls.Add(Label63)
+        Panel12.Controls.Add(Label64)
+        Panel12.Controls.Add(Label65)
+        Panel12.Location = New Point(1086, 422)
+        Panel12.Name = "Panel12"
+        Panel12.Size = New Size(346, 172)
+        Panel12.TabIndex = 35
+        ' 
+        ' TextBox11
+        ' 
+        TextBox11.BorderStyle = BorderStyle.None
+        TextBox11.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
+        TextBox11.Location = New Point(193, 124)
+        TextBox11.Name = "TextBox11"
+        TextBox11.Size = New Size(146, 32)
+        TextBox11.TabIndex = 8
+        TextBox11.Text = "00,0 °C"
+        TextBox11.TextAlign = HorizontalAlignment.Center
+        ' 
+        ' Label61
+        ' 
+        Label61.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
+        Label61.BorderStyle = BorderStyle.FixedSingle
+        Label61.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
+        Label61.Location = New Point(3, 122)
+        Label61.Name = "Label61"
+        Label61.Size = New Size(183, 42)
+        Label61.TabIndex = 7
+        Label61.Text = "OffSet"
+        Label61.TextAlign = ContentAlignment.MiddleCenter
+        ' 
+        ' lblTempEstResf
+        ' 
+        lblTempEstResf.BackColor = Color.Black
+        lblTempEstResf.BorderStyle = BorderStyle.FixedSingle
+        lblTempEstResf.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
+        lblTempEstResf.ForeColor = Color.Cyan
+        lblTempEstResf.Location = New Point(190, 78)
+        lblTempEstResf.Name = "lblTempEstResf"
+        lblTempEstResf.Size = New Size(151, 42)
+        lblTempEstResf.TabIndex = 4
+        lblTempEstResf.Text = "00,0 °C"
+        lblTempEstResf.TextAlign = ContentAlignment.MiddleCenter
+        ' 
+        ' Label62
+        ' 
+        Label62.BackColor = Color.FromArgb(CByte(192), CByte(255), CByte(192))
+        Label62.BorderStyle = BorderStyle.FixedSingle
+        Label62.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
+        Label62.Location = New Point(3, 78)
+        Label62.Name = "Label62"
+        Label62.Size = New Size(183, 42)
+        Label62.TabIndex = 3
+        Label62.Text = "Temperatura"
+        Label62.TextAlign = ContentAlignment.MiddleCenter
+        ' 
+        ' Label63
+        ' 
+        Label63.BackColor = Color.Teal
+        Label63.BorderStyle = BorderStyle.FixedSingle
+        Label63.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point)
+        Label63.ForeColor = SystemColors.ControlLightLight
+        Label63.Location = New Point(190, 48)
+        Label63.Name = "Label63"
+        Label63.Size = New Size(151, 29)
+        Label63.TabIndex = 2
+        Label63.Text = "Status"
+        Label63.TextAlign = ContentAlignment.MiddleCenter
+        ' 
+        ' Label64
+        ' 
+        Label64.BackColor = Color.Teal
+        Label64.BorderStyle = BorderStyle.FixedSingle
+        Label64.Font = New Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point)
+        Label64.ForeColor = SystemColors.ControlLightLight
+        Label64.Location = New Point(3, 48)
+        Label64.Name = "Label64"
+        Label64.Size = New Size(183, 29)
+        Label64.TabIndex = 1
+        Label64.Text = "Descrição"
+        Label64.TextAlign = ContentAlignment.MiddleCenter
+        ' 
+        ' Label65
+        ' 
+        Label65.BackColor = Color.FromArgb(CByte(255), CByte(224), CByte(192))
+        Label65.BorderStyle = BorderStyle.FixedSingle
+        Label65.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point)
+        Label65.Location = New Point(3, 5)
+        Label65.Name = "Label65"
+        Label65.Size = New Size(338, 42)
+        Label65.TabIndex = 0
+        Label65.Text = "Estocagem Resfriados"
+        Label65.TextAlign = ContentAlignment.MiddleCenter
+        ' 
         ' frmClimatizacao
         ' 
         AutoScaleDimensions = New SizeF(10F, 25F)
@@ -1258,6 +1369,7 @@ Partial Class frmClimatizacao
         AutoSize = True
         BackColor = Color.Gray
         ClientSize = New Size(1599, 932)
+        Controls.Add(Panel12)
         Controls.Add(Panel11)
         Controls.Add(Panel10)
         Controls.Add(Panel9)
@@ -1298,6 +1410,8 @@ Partial Class frmClimatizacao
         Panel10.PerformLayout()
         Panel11.ResumeLayout(False)
         Panel11.PerformLayout()
+        Panel12.ResumeLayout(False)
+        Panel12.PerformLayout()
         ResumeLayout(False)
     End Sub
 
@@ -1390,4 +1504,12 @@ Partial Class frmClimatizacao
     Friend WithEvents Label58 As Label
     Friend WithEvents Label59 As Label
     Friend WithEvents Label60 As Label
+    Friend WithEvents Panel12 As Panel
+    Friend WithEvents TextBox11 As TextBox
+    Friend WithEvents Label61 As Label
+    Friend WithEvents lblTempEstResf As Label
+    Friend WithEvents Label62 As Label
+    Friend WithEvents Label63 As Label
+    Friend WithEvents Label64 As Label
+    Friend WithEvents Label65 As Label
 End Class
